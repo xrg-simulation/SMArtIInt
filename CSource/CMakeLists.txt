@@ -7,13 +7,22 @@ project(SMArtIInt CXX)
 ################################################################################
 # Set target arch type if empty. Visual studio solution generator provides it.
 ################################################################################
-if(NOT CMAKE_VS_PLATFORM_NAME)
-    set(CMAKE_VS_PLATFORM_NAME "x64")
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    # 64 bits
+	if(NOT CMAKE_VS_PLATFORM_NAME)
+		set(CMAKE_VS_PLATFORM_NAME "x64")
+	endif()
+elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+    # 32 bits
+	if(NOT CMAKE_VS_PLATFORM_NAME)
+		set(CMAKE_VS_PLATFORM_NAME "x86")
+	endif()
 endif()
+
 message("${CMAKE_VS_PLATFORM_NAME} architecture in use")
 
 if(NOT ("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64"))
-    message(FATAL_ERROR "${CMAKE_VS_PLATFORM_NAME} arch is not supported!")
+    message(WARNING "${CMAKE_VS_PLATFORM_NAME} arch is not supported for tensorflow - only ClaRaDelay will be created!")
 endif()
 
 ################################################################################
@@ -93,6 +102,9 @@ endif()
 ################################################################################
 # Sub-projects
 ################################################################################
-add_subdirectory(${PROJECT_SOURCE_DIR}/SMArtIInt)
+if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
+	message(STATUS "Test")
+	add_subdirectory(${PROJECT_SOURCE_DIR}/SMArtIInt)
+endif()
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/External/ClaRaDelay)
