@@ -137,18 +137,18 @@ endif()
 ################################################################################
 # Dependencies
 ################################################################################
-if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
+#if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
     set(ADDITIONAL_LIBRARY_DEPENDENCIES
         "tensorflowlite_c"
     )
-endif()
+#endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
 
-if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
+#if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
     target_link_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}//External"
     )
-endif()
+#endif()
 
 
 

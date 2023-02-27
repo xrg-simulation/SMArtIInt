@@ -1,9 +1,10 @@
 #pragma once
 #include <string>
-#include <tchar.h>
+//#include <tchar.h>
 #include <iostream>
 #include "tensorflow/lite/c/c_api.h"
 #include <vector>
+#include <memory>
 
 
 namespace Utils

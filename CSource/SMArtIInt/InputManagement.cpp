@@ -4,6 +4,7 @@
 #include "Utils.h"
 #include <vector>
 #include <stdexcept>
+#include <cstring>
 
 InputManagement::InputManagement(bool stateful, double fixInterval, unsigned int nInputEntries)
 {
