@@ -137,36 +137,30 @@ endif()
 ################################################################################
 # Dependencies
 ################################################################################
-#if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
-    set(ADDITIONAL_LIBRARY_DEPENDENCIES
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	message("Building for LINUX")
+	target_link_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}//External")
+	target_link_libraries(${PROJECT_NAME} "libtensorflowlite_c.so")
+	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath=$ORIGIN")
+
+else ()
+
+	 set(ADDITIONAL_LIBRARY_DEPENDENCIES
         "tensorflowlite_c"
     )
-#endif()
-target_link_libraries(${PROJECT_NAME} PUBLIC "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
-
-#if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
-    target_link_directories(${PROJECT_NAME} PUBLIC
+	target_link_libraries(${PROJECT_NAME} PUBLIC "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
+	
+	
+	target_link_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}//External"
     )
-#endif()
+endif()
 
-
-
-# Output directory
+	if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
 set_target_properties(${PROJECT_NAME} PROPERTIES
         OUTPUT_DIRECTORY_DEBUG   "${CMAKE_SOURCE_DIR}//..//SMArtIInt/Resources/Library/win64/"
         OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}//..//SMArtIInt/Resources/Library/win64/")
-
-# if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
-    # set(ADDITIONAL_LIBRARY_DEPENDENCIES
-        # "tensorflowlite_c"
-    # )
-# endif()
-# target_link_libraries(${PROJECT_NAME} PUBLIC "tensorflowlite_c")
-
-# if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
-    # target_link_directories(${PROJECT_NAME} PUBLIC
-        # "${CMAKE_CURRENT_SOURCE_DIR}//External"
-    # )
-# endif()
-
+	elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x86")
+	message("Error - SMArtIInt cannot be compiled for win32")
+	endif()
