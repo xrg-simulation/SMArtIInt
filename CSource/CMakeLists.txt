@@ -3,8 +3,10 @@ cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
 set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
 
 project(SMArtIInt CXX)
-
-set (CMAKE_BUILD_TYPE Release)
+message("Specified build type: ${CMAKE_BUILD_TYPE}")
+if(NOT DEFINED CMAKE_BUILD_TYPE)
+	message("Build type not specified - use release mode")
+endif()
 
 ################################################################################
 # Set target arch type if empty. Visual studio solution generator provides it.
