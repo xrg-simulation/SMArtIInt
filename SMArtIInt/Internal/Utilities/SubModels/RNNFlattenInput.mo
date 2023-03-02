@@ -1,6 +1,5 @@
 within SMArtIInt.Internal.Utilities.SubModels;
 model RNNFlattenInput
-  // model demonstrates the functionality of ClaRaDelay.
 
   import gdv = SMArtIInt.Internal.ClaRaDelay.getDelayValuesAtTime;
   import HFM = SMArtIInt.Internal.Utilities.SubModels.RNNFlatteningMethod;
