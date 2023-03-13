@@ -1,3 +1,4 @@
+![Image](SMArtIInt_Icon.svg)
 # SMArtIInt
 The SMArtIINt Library aims to support the usage of different artificial intelligence models (AI) in Modelica simulation tools. Currently, it supports TensorFlow models exported as TFLite models within Dymola. 
 
@@ -12,3 +13,5 @@ SMArtIInt uses other software - the source code is included as submodule + a com
 * License: https://github.com/bazelbuild/bazel/blob/master/LICENSE
 3. ClaRa Delay (https://github.com/xrg-simulation/ClaRaDelay)
 * License: https://github.com/xrg-simulation/ClaRaDelay/blob/main/LICENSE
+
+This work was carried out within the framework of the research project DIZPROVI, supported by the Federal Ministry of Education and Research (number 03WIR0105E).

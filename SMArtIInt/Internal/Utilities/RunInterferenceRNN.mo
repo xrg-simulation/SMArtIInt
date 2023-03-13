@@ -15,9 +15,9 @@ model RunInterferenceRNN
   // instance of SMArtIInt class
   parameter Internal.SMArtIIntClass smartiint;
 
-  Interfaces.RealVectorInput u[nInputs]
+  Modelica.Blocks.Interfaces.RealInput u[nInputs]
     annotation (Placement(transformation(extent={{-120,-20},{-80,20}})));
-  Interfaces.RealVectorOutput y_flat[nOutputs]
+  Modelica.Blocks.Interfaces.RealOutput y_flat[nOutputs]
     annotation (Placement(transformation(extent={{78,-20},{118,20}})));
   SubModels.RNNFlattenInput flattenedHistory(
     useClaRaDelay=useClaRaDelay,
@@ -30,8 +30,7 @@ model RunInterferenceRNN
 
   SubModels.RNNDeflattenOutput unflattenOutput(
     nOutputs=nOutputs,
-    nHistoricElements=nHistoricElements,
-    y=y) if returnSequences annotation (Placement(transformation(extent={{-10,-40},{10,-20}})));
+    nHistoricElements=nHistoricElements) if returnSequences annotation (Placement(transformation(extent={{-10,-40},{10,-20}})));
 equation
   y_flat[:] = InterfaceFunctions.runInferenceFlatTensor(
     smartiint,

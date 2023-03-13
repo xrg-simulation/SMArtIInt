@@ -5,8 +5,8 @@ model Array2DFlatteningModel
 
   parameter Boolean useRowMajor = true "use true for row major flattening and false for column major flattening" annotation(Evaluate=true);
 
-  Interfaces.RealVectorOutput flatArray[batchSize*numberOfInputs] annotation (Placement(transformation(extent={{80,-20},{120,20}})));
-  Interfaces.RealVectorInput arrayIn[batchSize, numberOfInputs] annotation (Placement(transformation(extent={{-120,-20},{-80,20}})));
+  Modelica.Blocks.Interfaces.RealOutput flatArray[batchSize*numberOfInputs] annotation (Placement(transformation(extent={{80,-20},{120,20}})));
+  Modelica.Blocks.Interfaces.RealInput arrayIn[batchSize, numberOfInputs] annotation (Placement(transformation(extent={{-120,-20},{-80,20}})));
 equation
 
   if useRowMajor then

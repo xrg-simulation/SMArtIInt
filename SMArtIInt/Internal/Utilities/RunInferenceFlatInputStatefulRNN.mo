@@ -11,9 +11,9 @@ model RunInferenceFlatInputStatefulRNN
   final parameter Modelica.Units.SI.Time startTime(fixed=false);
   Boolean sampleTrigger;
 
-  Interfaces.RealVectorInput realVectorInput[nTotalInputsElements]
+  Modelica.Blocks.Interfaces.RealInput realVectorInput[nTotalInputsElements]
     annotation (Placement(transformation(extent={{-118,-20},{-78,20}})));
-  Interfaces.RealVectorOutput y[nTotalOutputElements] annotation (Placement(transformation(extent={{80,-20},{120,20}})));
+  Modelica.Blocks.Interfaces.RealOutput y[nTotalOutputElements] annotation (Placement(transformation(extent={{80,-20},{120,20}})));
 
 initial equation
   startTime = time;
