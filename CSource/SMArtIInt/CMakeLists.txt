@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.16)
+cmake_policy(SET CMP0091 NEW)
 
 ################################################################################
 # Source groups
@@ -81,9 +82,12 @@ if(MSVC)
 		)
 	endif()
 
-################################################################################
-# Compile and link options
-################################################################################
+	################################################################################
+	# Compile and link options
+	################################################################################
+
+	set_property(TARGET ${PROJECT_NAME} PROPERTY
+				 MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
     if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
         target_compile_options(${PROJECT_NAME} PRIVATE
