@@ -4,12 +4,12 @@ class ExternalTable
   function constructor
     extends Modelica.Icons.Function;
     output ExternalTable table;
-    external "C" table = initDelay() annotation (Library={"Delay-V1"});
+    external "C" table = clara_initDelay() annotation (Library={"Delay-V1"});
   end constructor;
 
   function destructor "Release storage of table"
     extends Modelica.Icons.Function;
     input ExternalTable table;
-    external "C" deleteDelay(table) annotation (Library={"Delay-V1"});
+    external "C" clara_deleteDelay(table) annotation (Library={"Delay-V1"});
   end destructor;
 end ExternalTable;
