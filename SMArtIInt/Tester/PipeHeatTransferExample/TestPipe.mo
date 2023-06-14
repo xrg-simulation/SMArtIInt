@@ -16,7 +16,8 @@ model TestPipe
                                                                              annotation (Placement(transformation(extent={{68,-10},{48,10}})));
   Modelica.Fluid.Sources.MassFlowSource_T source(redeclare package Medium = Medium,
     m_flow=1,                                                                       nPorts=1) annotation (Placement(transformation(extent={{-80,-10},{-60,10}})));
-  inner Modelica.Fluid.System system annotation (Placement(transformation(extent={{-78,60},{-58,80}})));
+  inner Modelica.Fluid.System system(energyDynamics=Modelica.Fluid.Types.Dynamics.FixedInitial)
+                                     annotation (Placement(transformation(extent={{-78,60},{-58,80}})));
 
   Modelica.Thermal.HeatTransfer.Sources.FixedHeatFlow fixedHeatFlow[pipe.n](each Q_flow=1000) annotation (Placement(transformation(extent={{-36,22},{-16,42}})));
 equation

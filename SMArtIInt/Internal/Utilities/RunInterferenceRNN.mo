@@ -8,15 +8,14 @@ model RunInterferenceRNN
   parameter Integer nHistoricElements=10 "Number of elements from sampling steps for each input fed to the neural net";
 
   parameter Boolean continuous=false;
-  parameter Boolean useClaRaDelay = true "Switch between available delay types: Clara and MSL";
+  parameter Boolean useClaRaDelay=true "Switch between available delay types: Clara and MSL";
   parameter SubModels.RNNFlatteningMethod flatteningMethod=SubModels.RNNFlatteningMethod.OldFIrstInputSeq;
-  parameter Boolean returnSequences = false;
+  parameter Boolean returnSequences=false;
 
   // instance of SMArtIInt class
   parameter Internal.SMArtIIntClass smartiint;
 
-  Modelica.Blocks.Interfaces.RealInput u[nInputs]
-    annotation (Placement(transformation(extent={{-120,-20},{-80,20}})));
+  Modelica.Blocks.Interfaces.RealInput u[nInputs] annotation (Placement(transformation(extent={{-120,-20},{-80,20}})));
   Modelica.Blocks.Interfaces.RealOutput y_flat[nOutputs]
     annotation (Placement(transformation(extent={{78,-20},{118,20}})));
   SubModels.RNNFlattenInput flattenedHistory(
@@ -28,9 +27,8 @@ model RunInterferenceRNN
     flatteningMethod=flatteningMethod,
     u=u) annotation (Placement(transformation(extent={{-10,20},{10,40}})));
 
-  SubModels.RNNDeflattenOutput unflattenOutput(
-    nOutputs=nOutputs,
-    nHistoricElements=nHistoricElements) if returnSequences annotation (Placement(transformation(extent={{-10,-40},{10,-20}})));
+  SubModels.RNNDeflattenOutput unflattenOutput(nOutputs=nOutputs, nHistoricElements=nHistoricElements)
+    if returnSequences annotation (Placement(transformation(extent={{-10,-40},{10,-20}})));
 equation
   y_flat[:] = InterfaceFunctions.runInferenceFlatTensor(
     smartiint,
@@ -38,5 +36,11 @@ equation
     flattenedHistory.inputFlattenTensor,
     nOutputs);
 
-  annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(coordinateSystem(preserveAspectRatio=false)));
+  annotation (Icon(coordinateSystem(preserveAspectRatio=false), graphics={Rectangle(
+          extent={{-100,100},{100,-100}},
+          pattern=LinePattern.None,
+          fillColor={255,255,255},
+          fillPattern=FillPattern.Solid), Bitmap(extent={{-102,-100},{102,100}},
+          fileName="modelica://SMArtIInt/Resources/Images/Icon_Inference.svg")}),
+      Diagram(coordinateSystem(preserveAspectRatio=false)));
 end RunInterferenceRNN;
