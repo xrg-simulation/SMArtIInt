@@ -11,7 +11,7 @@ model RunInferenceFlatInputStatefulRNN
   final parameter Modelica.Units.SI.Time startTime(fixed=false);
   Boolean sampleTrigger;
 
-  Modelica.Blocks.Interfaces.RealInput realVectorInput[nTotalInputsElements]
+  Modelica.Blocks.Interfaces.RealInput u[nTotalInputsElements]
     annotation (Placement(transformation(extent={{-118,-20},{-78,20}})));
   Modelica.Blocks.Interfaces.RealOutput y[nTotalOutputElements] annotation (Placement(transformation(extent={{80,-20},{120,20}})));
 
@@ -20,19 +20,19 @@ initial equation
 equation
   if continuous then
     sampleTrigger = true;
-    y[:] = InterfaceFunctions.runInferenceFlatTensor(
+    y[:] =InterfaceFunctions.runInferenceFlatTensor(
       smartiint,
       time,
-      realVectorInput,
+      u,
       nTotalOutputElements);
   else
     sampleTrigger = sample(startTime, samplePeriod);
 
     when {sampleTrigger, initial()} then
-      y[:] = InterfaceFunctions.runInferenceFlatTensor(
+      y[:] =InterfaceFunctions.runInferenceFlatTensor(
         smartiint,
         time,
-        realVectorInput,
+        u,
         nTotalOutputElements);
     end when;
 

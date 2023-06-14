@@ -32,7 +32,7 @@ partial model BaseStatefulRecurrentNeuralNet
 
 equation
 
-  connect(array2DFlatteningModel.flatArray, runInferenceFlatInputStatefulRNN.realVectorInput)
+  connect(array2DFlatteningModel.flatArray, runInferenceFlatInputStatefulRNN.u)
     annotation (Line(points={{-20,0},{-9.8,0}}, color={0,0,127}));
   connect(runInferenceFlatInputStatefulRNN.y, array2DDeflatteningModel.flatArray)
     annotation (Line(points={{10,0},{20.2,0}}, color={0,0,127}));

@@ -1,0 +1,6 @@
+// clear
+convertClear();
+
+// TableGasKvValve
+convertElement("SMArtIInt.Internal.Utilities.RunInferenceFlatInputStatefulRNN.mo", "realVectorInput", "u")
+convertElement("SMArtIInt.Internal.Utilities.RunInferenceFlatInput.mo", "realVectorInput", "u")
