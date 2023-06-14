@@ -8,8 +8,8 @@ model BaseFeedForwardNeuralNet
     final inputDimensions=2,
     final samplePeriod=0);
 
-  parameter Integer numberOfInputs "Number of Real Inputs";
-  parameter Integer numberOfOutputs "Number of Real Outputs";
+  parameter Integer numberOfInputs = 1 "Number of Real Inputs";
+  parameter Integer numberOfOutputs = 1 "Number of Real Outputs";
 
   parameter Integer batchSize=1 "Number of parallel batched simulations";
 

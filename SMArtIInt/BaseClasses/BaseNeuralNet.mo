@@ -3,12 +3,12 @@ partial model BaseNeuralNet
 
   parameter String pathToTfLiteFile="" "Choose path to tflite file" annotation (Dialog(group="Selected Model"));
 
-  parameter Integer inputDimensions "Number of input dimension" annotation (Dialog(group="Tensor sizing"));
-  parameter Integer[inputDimensions] inputSizes "Vector with size of tensor in each dimension" annotation (Dialog(group="Tensor sizing"));
+  parameter Integer inputDimensions = 1 "Number of input dimension" annotation (Dialog(group="Tensor sizing"));
+  parameter Integer[inputDimensions] inputSizes = {1} "Vector with size of tensor in each dimension" annotation (Dialog(group="Tensor sizing"));
   final parameter Integer nInputElements=product(inputSizes);
 
-  parameter Integer outputDimensions "Number of output dimension" annotation (Dialog(group="Tensor sizing"));
-  parameter Integer[outputDimensions] outputSizes "Vector with size of tensor in each dimension" annotation (Dialog(group="Tensor sizing"));
+  parameter Integer outputDimensions = 1 "Number of output dimension" annotation (Dialog(group="Tensor sizing"));
+  parameter Integer[outputDimensions] outputSizes = {1} "Vector with size of tensor in each dimension" annotation (Dialog(group="Tensor sizing"));
   final parameter Integer nOutputElements=product(outputSizes);
 
   parameter Boolean stateful=false "Activate state handling for RNN with state in-/outputs" annotation (Dialog(group="RNN Timing Settings"));

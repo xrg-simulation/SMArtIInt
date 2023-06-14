@@ -1,6 +1,6 @@
 within SMArtIInt.Internal.Utilities.SubModels;
 model Array2DDeflatteningModel
-  parameter Integer numberOfOutput "Number of Real Outputs";
+  parameter Integer numberOfOutput = 1 "Number of Real Outputs";
   parameter Integer batchSize=1 "Number of parallel batched inqueries";
 
   parameter Boolean useRowMajor = true "use true for row major flattening and false for column major flattening" annotation(Evaluate=true);
