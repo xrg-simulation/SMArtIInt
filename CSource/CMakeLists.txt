@@ -123,25 +123,7 @@ if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
 	add_subdirectory(${PROJECT_SOURCE_DIR}/SMArtIInt)
 endif()
 
-
 add_subdirectory(${PROJECT_SOURCE_DIR}/../External/ClaRaDelay/CSource "ClaRaDelay")
-#[===[
-# set the output directory
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-	if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-		add_subdirectory(${PROJECT_SOURCE_DIR}/../External/ClaRaDelay/CSource "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/linux64/")
-	else ()
-		message( FATAL_ERROR "SMartIInt cannot be compiled for x86, CMake will exit." )
-	endif()
-else ()
-	if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
-		add_subdirectory(${PROJECT_SOURCE_DIR}/../External/ClaRaDelay/CSource "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/win64/")
-	elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x86")
-		message( FATAL_ERROR "SMartIInt cannot be compiled for x86, CMake will exit." )
-	endif()
-
-endif ()
-]===]
 
 
 
