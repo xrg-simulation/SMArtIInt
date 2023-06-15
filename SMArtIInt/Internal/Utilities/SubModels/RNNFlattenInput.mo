@@ -1,7 +1,7 @@
 within SMArtIInt.Internal.Utilities.SubModels;
 model RNNFlattenInput
 
-  import gdv = SMArtIInt.Internal.ClaRaDelay.getDelayValuesAtTime;
+  import gdv = SMArtIInt.Internal.ClaRaDelay.getDelayValuesAtTimeArray;
   import HFM = SMArtIInt.Internal.Utilities.SubModels.RNNFlatteningMethod;
 
   parameter Boolean useClaRaDelay=true;
@@ -26,8 +26,8 @@ model RNNFlattenInput
 
   //Pointers for inputFlattenTensor2 and delayedInputs
   //Note: in contrast to Modelica delay we need only 1 delay-table pointer per input.
-  SMArtIInt.Internal.ClaRaDelay.ExternalTable[nInputs] pointer_inputFlattenTensor={
-      SMArtIInt.Internal.ClaRaDelay.ExternalTable() for i in 1:nInputs};
+  SMArtIInt.Internal.ClaRaDelay.ExternalTables pointer_inputFlattenTensor=
+      SMArtIInt.Internal.ClaRaDelay.ExternalTables(nInputs);
 
   //////////////////////////////////////////////////////////////////////////////////
   //DelayTimes for ClaRaDelay
@@ -59,10 +59,11 @@ equation
               inputFlattenTensor[(t - 1)*nInputs + i] = delay(u[i], samplePeriod*(t - 1));
             else
               inputFlattenTensor[(t - 1)*nInputs + i] = gdv(
-                pointer_inputFlattenTensor[i],
+                pointer_inputFlattenTensor,
                 time,
                 u[i],
-                delayTimes[t]);
+                delayTimes[t],
+                i);
             end if;
           end if;
         elseif flatteningMethod == RNNFlatteningMethod.NewFirstTimeSeq then
@@ -73,10 +74,11 @@ equation
               inputFlattenTensor[(i - 1)*nHistoricElements + t] = delay(u[i], samplePeriod*(t - 1));
             else
               inputFlattenTensor[(t - 1)*nInputs + i] = gdv(
-                pointer_inputFlattenTensor[i],
+                pointer_inputFlattenTensor,
                 time,
                 u[i],
-                delayTimes[t]);
+                delayTimes[t],
+                i);
             end if;
           end if;
         elseif flatteningMethod == RNNFlatteningMethod.OldFIrstInputSeq then
@@ -87,10 +89,11 @@ equation
               inputFlattenTensor[(t - 1)*nInputs + i] = delay(u[i], samplePeriod*(nHistoricElements - t));
             else
               inputFlattenTensor[(t - 1)*nInputs + i] = gdv(
-                pointer_inputFlattenTensor[i],
+                pointer_inputFlattenTensor,
                 time,
                 u[i],
-                delayTimes[nHistoricElements - t + 1]);
+                delayTimes[nHistoricElements - t + 1],
+                i);
             end if;
           end if;
         elseif flatteningMethod == RNNFlatteningMethod.OldFirstTimeSeq then
@@ -101,10 +104,11 @@ equation
               inputFlattenTensor[(i - 1)*nHistoricElements + t] = delay(u[i], samplePeriod*(nHistoricElements - t));
             else
               inputFlattenTensor[(i - 1)*nHistoricElements + t] = gdv(
-                pointer_inputFlattenTensor[i],
+                pointer_inputFlattenTensor,
                 time,
                 u[i],
-                delayTimes[nHistoricElements - t + 1]);
+                delayTimes[nHistoricElements - t + 1],
+                i);
             end if;
           end if;
         end if;
