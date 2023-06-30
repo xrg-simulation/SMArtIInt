@@ -29,5 +29,5 @@ equation
           fillColor={255,255,255},
           fillPattern=FillPattern.Solid),
                              Bitmap(extent={{-80,-80},{80,80}}, fileName=
-              "modelica://SMArtIInt/Resources/Images/Icon_Flattening.svg")}));
+              "modelica://SMArtIInt/Resources/Images/Icon_Flattening.png")}));
 end Array2DFlatteningModel;

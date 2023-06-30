@@ -28,5 +28,5 @@ equation
           lineColor={0,0,0},
           fillColor={255,255,255},
           fillPattern=FillPattern.Solid), Bitmap(extent={{-80,-80},{80,80}}, fileName=
-              "modelica://SMArtIInt/Resources/Images/Icon_Deflattening.svg")}));
+              "modelica://SMArtIInt/Resources/Images/Icon_Deflattening.png")}));
 end Array2DDeflatteningModel;

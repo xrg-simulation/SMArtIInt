@@ -44,6 +44,6 @@ equation
           pattern=LinePattern.None,
           fillColor={255,255,255},
           fillPattern=FillPattern.Solid), Bitmap(extent={{-102,-100},{102,100}},
-          fileName="modelica://SMArtIInt/Resources/Images/Icon_Inference.svg")}),
+          fileName="modelica://SMArtIInt/Resources/Images/Icon_Inference.png")}),
       Diagram(coordinateSystem(preserveAspectRatio=false)));
 end RunInferenceFlatInputStatefulRNN;

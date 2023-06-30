@@ -34,7 +34,7 @@ protected
           pattern=LinePattern.None,
           fillColor={255,255,255},
           fillPattern=FillPattern.Solid), Bitmap(extent={{-100,-100},{100,100}},
-          fileName="modelica://SMArtIInt/Resources/Images/Icon_Inference.svg")}),
+          fileName="modelica://SMArtIInt/Resources/Images/Icon_Inference.png")}),
     Diagram(coordinateSystem(preserveAspectRatio=false)),
     Documentation(info="<html>
 <p>This base class defines the parameter interface for all classes using the TfLite interface. This class does not contain any evaluation call of a TfLite model and therefore it should not be used.</p>

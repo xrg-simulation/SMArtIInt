@@ -5,7 +5,7 @@ model TF_PI_Stateful
     final numberOfOutputs=1,
     final numberOfInputs=1,
     final samplePeriod=10,
-    final pathToTfLiteFile=Modelica.Utilities.Files.loadResource("modelica://SMArtIInt/../ExampleNeuralNets/PIController/PI_stateful.tflite"));
+    final pathToTfLiteFile=Modelica.Utilities.Files.loadResource("modelica://SMArtIInt/Resources/ExampleNeuralNets/PI_stateful.tflite"));
 
   Modelica.Blocks.Interfaces.RealInput  u annotation (Placement(transformation(extent={{-126,-20},{-86,20}})));
   Modelica.Blocks.Interfaces.RealOutput y annotation (Placement(transformation(extent={{94,-10},{114,10}})));
