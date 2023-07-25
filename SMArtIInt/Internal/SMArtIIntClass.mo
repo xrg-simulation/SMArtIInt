@@ -16,14 +16,14 @@ class SMArtIIntClass
     external "C" smartiint = NeuralNet_createObject(modelicaUtilityHelper, pathToTfLiteFile,
       n_inputDim, inputSizes, n_outputDim, outputSizes,
       stateful, fixEvalStep) annotation (
-      Library="SMArtIInt",
+      Library={"SMArtIInt","tensorflowlite_c"},
       LibraryDirectory="modelica://SMArtIInt/Resources/Library");
   end constructor;
 
   function destructor
     input SMArtIIntClass smartiint;
   external"C" NeuralNet_destroyObject(smartiint) annotation (
-      Library="SMArtIInt",
+      Library={"SMArtIInt","tensorflowlite_c"},
       LibraryDirectory="modelica://SMArtIInt/Resources/Library");
   end destructor;
 end SMArtIIntClass;
