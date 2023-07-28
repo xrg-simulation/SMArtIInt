@@ -89,6 +89,8 @@ model DoubleRoom_ContinuousPI
     height=150,
     offset=100,
     startTime=10000) annotation (Placement(transformation(extent={{-112,44},{-92,64}})));
+  inner Modelica.Fluid.System system annotation (Placement(transformation(extent={{-80,80},{-60,100}})));
+  inner Modelica.Blocks.Noise.GlobalSeed globalSeed annotation (Placement(transformation(extent={{-100,80},{-80,100}})));
 equation
   connect(boundary.ports[1],room_1. ports[1]) annotation (Line(points={{-50,0},{-29,0},{-29,10}}, color={0,127,255}));
   connect(room_1.ports[2], volumeFlowRate.port_a)
