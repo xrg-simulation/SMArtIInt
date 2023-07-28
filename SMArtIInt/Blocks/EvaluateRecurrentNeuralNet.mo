@@ -1,15 +1,13 @@
 within SMArtIInt.Blocks;
 model EvaluateRecurrentNeuralNet
   extends BaseClasses.BaseRecurrentNeuralNet;
-  Interfaces.RealVectorInput                 realVectorInput
-                                              [size(runInterferenceHistory.u, 1)]
-    annotation (Placement(transformation(extent={{-110,-10},{-90,10}}),iconTransformation(extent={{-110,-10},{-90,10}})));
-  Interfaces.RealVectorInput                  realVectorInput1
-                                               [size(runInterferenceHistory.y_flat, 1)]
+  Modelica.Blocks.Interfaces.RealInput u[numberOfInputs] annotation (Placement(transformation(extent={{-110,-10},{-90,10}}),
+        iconTransformation(extent={{-110,-10},{-90,10}})));
+  Modelica.Blocks.Interfaces.RealOutput                  y[numberOfOutputs]
     annotation (Placement(transformation(extent={{90,-10},{110,10}}), iconTransformation(extent={{90,-10},{110,10}})));
 equation
-  connect(runInterferenceHistory.u, realVectorInput) annotation (Line(points={{-10,0},{-100,0}}, color={0,0,127}));
-  connect(runInterferenceHistory.y_flat, realVectorInput1) annotation (Line(points={{9.8,0},{100,0}}, color={0,0,127}));
+  connect(runInterferenceHistory.u, u) annotation (Line(points={{-10,0},{-100,0}}, color={0,0,127}));
+  connect(runInterferenceHistory.y_flat, y) annotation (Line(points={{9.8,0},{100,0}}, color={0,0,127}));
   annotation (Documentation(info="<html>
 <p>Use this block if you want to include a recurrent neural network in Modelica.</p>
 <p>Please place this block in your model and</p>

@@ -2,9 +2,9 @@ within SMArtIInt.Blocks;
 model EvaluateSimpleFeedForwardNeuralNetwork
   extends BaseClasses.BaseFeedForwardNeuralNet;
 
-  Interfaces.RealVectorInput arrayIn[size(array2DFlatteningModel.arrayIn, 1),size(array2DFlatteningModel.arrayIn, 2)]
+  Modelica.Blocks.Interfaces.RealInput arrayIn[size(array2DFlatteningModel.arrayIn, 1),size(array2DFlatteningModel.arrayIn, 2)]
     annotation (Placement(transformation(extent={{-108,-10},{-88,10}}), iconTransformation(extent={{-108,-10},{-88,10}})));
-  Interfaces.RealVectorInput arrayOut[size(array2DDeflatteningModel.arrayOut, 1),size(array2DDeflatteningModel.arrayOut,
+  Modelica.Blocks.Interfaces.RealOutput arrayOut[size(array2DDeflatteningModel.arrayOut, 1),size(array2DDeflatteningModel.arrayOut,
     2)]
     annotation (Placement(transformation(extent={{90,-10},{110,10}}), iconTransformation(extent={{90,-10},{110,10}})));
 equation

@@ -1,12 +1,12 @@
 within SMArtIInt.Blocks;
 model EvaluateStatefulRecurrentNeuralNet
   extends BaseClasses.BaseStatefulRecurrentNeuralNet;
-  Interfaces.RealVectorInput realVectorInput[size(array2DFlatteningModel.arrayIn, 1),size(array2DFlatteningModel.arrayIn,
+  Modelica.Blocks.Interfaces.RealInput u[size(array2DFlatteningModel.arrayIn, 1),size(array2DFlatteningModel.arrayIn,
     2)] annotation (Placement(transformation(extent={{-110,-10},{-90,10}}), iconTransformation(extent={{-110,-10},{-90,10}})));
-  Interfaces.RealVectorOutput y[size(array2DDeflatteningModel.arrayOut, 1),size(array2DDeflatteningModel.arrayOut, 2)]
+  Modelica.Blocks.Interfaces.RealOutput y[size(array2DDeflatteningModel.arrayOut, 1),size(array2DDeflatteningModel.arrayOut, 2)]
     annotation (Placement(transformation(extent={{90,-10},{110,10}})));
 equation
-  connect(array2DFlatteningModel.arrayIn, realVectorInput)
+  connect(array2DFlatteningModel.arrayIn, u)
     annotation (Line(points={{-40,0},{-100,0}}, color={0,0,127}));
   connect(array2DDeflatteningModel.arrayOut, y) annotation (Line(points={{41.2,0},{100,0}}, color={0,0,127}));
   annotation (Documentation(info="<html>

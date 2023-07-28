@@ -4,10 +4,6 @@ import numpy as np
 import matplotlib.pylab as plt
 import tensorflow as tf
 from enum import Enum
-# in the used version it was required to explicitly import keras - this
-# might be a bug
-import tensorflow.keras
-
 
 class RnnType(Enum):
     """available types of RNN"""

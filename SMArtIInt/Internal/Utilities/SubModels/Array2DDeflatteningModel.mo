@@ -1,12 +1,12 @@
 within SMArtIInt.Internal.Utilities.SubModels;
 model Array2DDeflatteningModel
-  parameter Integer numberOfOutput "Number of Real Outputs";
+  parameter Integer numberOfOutput = 1 "Number of Real Outputs";
   parameter Integer batchSize=1 "Number of parallel batched inqueries";
 
   parameter Boolean useRowMajor = true "use true for row major flattening and false for column major flattening" annotation(Evaluate=true);
 
-  Interfaces.RealVectorInput  flatArray[batchSize*numberOfOutput] annotation (Placement(transformation(extent={{-118,-20},{-78,20}})));
-  Interfaces.RealVectorOutput arrayOut         [batchSize, numberOfOutput] annotation (Placement(transformation(extent={{92,-20},{132,20}})));
+  Modelica.Blocks.Interfaces.RealInput  flatArray[batchSize*numberOfOutput] annotation (Placement(transformation(extent={{-118,-20},{-78,20}})));
+  Modelica.Blocks.Interfaces.RealOutput arrayOut         [batchSize, numberOfOutput] annotation (Placement(transformation(extent={{92,-20},{132,20}})));
 equation
 
   if useRowMajor then
@@ -28,5 +28,5 @@ equation
           lineColor={0,0,0},
           fillColor={255,255,255},
           fillPattern=FillPattern.Solid), Bitmap(extent={{-80,-80},{80,80}}, fileName=
-              "modelica://SMArtIInt/Resources/Images/Icon_Deflattening.svg")}));
+              "modelica://SMArtIInt/Resources/Images/Icon_Deflattening.png")}));
 end Array2DDeflatteningModel;

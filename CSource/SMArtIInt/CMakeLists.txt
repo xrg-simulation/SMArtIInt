@@ -1,8 +1,5 @@
-set(PROJECT_NAME SMArtIInt)
-
-# dependencies
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../External/tensorflow/)
-link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../External/tensorflow/)
+cmake_minimum_required(VERSION 3.16)
+cmake_policy(SET CMP0091 NEW)
 
 ################################################################################
 # Source groups
@@ -36,57 +33,62 @@ set(ALL_FILES
 ################################################################################
 add_library(${PROJECT_NAME} SHARED ${ALL_FILES})
 
-use_props(${PROJECT_NAME} "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
-set(ROOT_NAMESPACE SMArtIInt)
-
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    VS_GLOBAL_KEYWORD "Win32Proj"
-)
-
-if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-        INTERPROCEDURAL_OPTIMIZATION_RELEASE "TRUE"
-    )
-elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x86")
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-        INTERPROCEDURAL_OPTIMIZATION_RELEASE "TRUE"
-    )
-endif()
-
-################################################################################
-# Compile definitions
-################################################################################
-if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        "$<$<CONFIG:Debug>:"
-            "_DEBUG"
-        ">"
-        "$<$<CONFIG:Release>:"
-            "NDEBUG"
-        ">"
-        "_LIB;"
-        "UNICODE;"
-        "_UNICODE"
-    )
-elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x86")
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        "$<$<CONFIG:Debug>:"
-            "_DEBUG"
-        ">"
-        "$<$<CONFIG:Release>:"
-            "NDEBUG"
-        ">"
-        "WIN32;"
-        "_LIB;"
-        "UNICODE;"
-        "_UNICODE"
-    )
-endif()
-
-################################################################################
-# Compile and link options
-################################################################################
+# specific settings for MSVC
 if(MSVC)
+	use_props(${PROJECT_NAME} "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
+	set(ROOT_NAMESPACE SMArtIInt)
+
+	set_target_properties(${PROJECT_NAME} PROPERTIES
+		VS_GLOBAL_KEYWORD "Win32Proj"
+	)
+
+	if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
+		set_target_properties(${PROJECT_NAME} PROPERTIES
+			INTERPROCEDURAL_OPTIMIZATION_RELEASE "TRUE"
+		)
+	elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x86")
+		set_target_properties(${PROJECT_NAME} PROPERTIES
+			INTERPROCEDURAL_OPTIMIZATION_RELEASE "TRUE"
+		)
+	endif()
+
+	################################################################################
+	# Compile definitions
+	################################################################################
+	if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
+		target_compile_definitions(${PROJECT_NAME} PRIVATE
+			"$<$<CONFIG:Debug>:"
+				"_DEBUG"
+			">"
+			"$<$<CONFIG:Release>:"
+				"NDEBUG"
+			">"
+			"_LIB;"
+			"UNICODE;"
+			"_UNICODE"
+		)
+	elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x86")
+		target_compile_definitions(${PROJECT_NAME} PRIVATE
+			"$<$<CONFIG:Debug>:"
+				"_DEBUG"
+			">"
+			"$<$<CONFIG:Release>:"
+				"NDEBUG"
+			">"
+			"WIN32;"
+			"_LIB;"
+			"UNICODE;"
+			"_UNICODE"
+		)
+	endif()
+
+	################################################################################
+	# Compile and link options
+	################################################################################
+
+	set_property(TARGET ${PROJECT_NAME} PROPERTY
+				 MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
     if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
         target_compile_options(${PROJECT_NAME} PRIVATE
             $<$<CONFIG:Release>:
@@ -137,36 +139,18 @@ endif()
 ################################################################################
 # Dependencies
 ################################################################################
-if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
-    set(ADDITIONAL_LIBRARY_DEPENDENCIES
-        "tensorflowlite_c"
-    )
-endif()
-target_link_libraries(${PROJECT_NAME} PUBLIC "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
 
-if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
-    target_link_directories(${PROJECT_NAME} PUBLIC
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../External/tensorflow/)
+link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../External/tensorflow/)
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	target_link_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}//External")
+	target_link_libraries(${PROJECT_NAME} "libtensorflowlite_c.so")
+	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath=$ORIGIN")
+else ()
+	set(ADDITIONAL_LIBRARY_DEPENDENCIES "tensorflowlite_c")
+	target_link_libraries(${PROJECT_NAME} PUBLIC "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
+	target_link_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}//External"
     )
 endif()
-
-
-
-# Output directory
-set_target_properties(${PROJECT_NAME} PROPERTIES
-        OUTPUT_DIRECTORY_DEBUG   "${CMAKE_SOURCE_DIR}//..//SMArtIInt/Resources/Library/win64/"
-        OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}//..//SMArtIInt/Resources/Library/win64/")
-
-# if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
-    # set(ADDITIONAL_LIBRARY_DEPENDENCIES
-        # "tensorflowlite_c"
-    # )
-# endif()
-# target_link_libraries(${PROJECT_NAME} PUBLIC "tensorflowlite_c")
-
-# if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
-    # target_link_directories(${PROJECT_NAME} PUBLIC
-        # "${CMAKE_CURRENT_SOURCE_DIR}//External"
-    # )
-# endif()
-

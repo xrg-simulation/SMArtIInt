@@ -2,5 +2,5 @@
 	path = CSource/External/tensorflow
 	url = https://github.com/tensorflow/tensorflow
 [submodule "CSource/External/ClaRaDelay"]
-	path = CSource/External/ClaRaDelay
+	path = External/ClaRaDelay
 	url = https://github.com/xrg-simulation/ClaRaDelay

@@ -4,9 +4,6 @@ import pyDOE2 as doe
 import matplotlib.pylab as plt
 import tensorflow as tf
 import datetime
-# in the used version it was required to explicitly import keras - this
-# might be a bug
-import tensorflow.keras
 import plotly.graph_objects as go
 import plotly.io as pio
 import pickle

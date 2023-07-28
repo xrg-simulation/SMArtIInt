@@ -1,0 +1,10 @@
+// clear
+convertClear();
+
+// Convert connector naming
+convertElement("SMArtIInt.Internal.Utilities.RunInferenceFlatInputStatefulRNN.mo", "realVectorInput", "u")
+convertElement("SMArtIInt.Internal.Utilities.RunInferenceFlatInput.mo", "realVectorInput", "u")
+
+// Convert connector type - should not be necessary
+convertClass("SMArtIInt.Interfaces.RealVectorInput", "Modelica.Blocks.Interfaces.RealInput")
+convertClass("SMArtIInt.Interfaces.RealVectorOutput", "Modelica.Blocks.Interfaces.RealOutput")

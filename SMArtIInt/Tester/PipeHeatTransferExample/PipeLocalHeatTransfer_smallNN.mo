@@ -2,12 +2,12 @@ within SMArtIInt.Tester.PipeHeatTransferExample;
 model PipeLocalHeatTransfer_smallNN
   extends BaseClasses.BaseFeedForwardNeuralNet(final numberOfOutputs=1, final numberOfInputs=3,
   pathToTfLiteFile=Modelica.Utilities.Files.loadResource(
-        "modelica://SMArtIInt//..//ExampleNeuralNets//NNHeatTransfer//model_small.tflite"));
+        "modelica://SMArtIInt//Resources//ExampleNeuralNets//ExampleNeuralNets//NNHeatTransfer//model_small.tflite"));
 
-  Interfaces.RealVectorInput Re[batchSize] annotation (Placement(transformation(extent={{-120,40},{-80,80}})));
-  Interfaces.RealVectorInput Pr[batchSize] annotation (Placement(transformation(extent={{-120,-20},{-80,20}})));
-  Interfaces.RealVectorInput dByL[batchSize] annotation (Placement(transformation(extent={{-120,-80},{-80,-40}})));
-  Interfaces.RealVectorOutput Nu[batchSize] annotation (Placement(transformation(extent={{90,-10},{110,10}})));
+  Modelica.Blocks.Interfaces.RealInput Re[batchSize] annotation (Placement(transformation(extent={{-120,40},{-80,80}})));
+  Modelica.Blocks.Interfaces.RealInput Pr[batchSize] annotation (Placement(transformation(extent={{-120,-20},{-80,20}})));
+  Modelica.Blocks.Interfaces.RealInput dByL[batchSize] annotation (Placement(transformation(extent={{-120,-80},{-80,-40}})));
+  Modelica.Blocks.Interfaces.RealOutput Nu[batchSize] annotation (Placement(transformation(extent={{90,-10},{110,10}})));
 equation
   connect(Re, array2DFlatteningModel.arrayIn[:, 1])
     annotation (Line(points={{-100,60},{-60,60},{-60,0},{-42,0}}, color={0,0,0}));

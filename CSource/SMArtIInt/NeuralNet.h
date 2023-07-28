@@ -1,5 +1,4 @@
 #pragma once
-#include <windows.h>
 #include <memory>
 #include <string>
 #include <stdexcept>
@@ -8,6 +7,7 @@
 #include "../../SMArtIInt/Resources/Include/ModelicaUtilityHelper.h"
 #include "tensorflow/lite/c/c_api.h"
 #include "InputManagement.h"
+#include <cstring>
 
 class NeuralNet
 {
@@ -62,7 +62,7 @@ private:
 };
 
 
-
+/*
 static std::wstring charToWString(const char* text)
 {
 	const size_t size = std::strlen(text);
@@ -75,3 +75,4 @@ static std::wstring charToWString(const char* text)
 	}
 	return wstr.substr(0, wstr.size() - 1);;
 }
+*/

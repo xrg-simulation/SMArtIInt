@@ -5,20 +5,23 @@ model RunInferenceFlatInput
 
   parameter SMArtIIntClass smartiint;
 
-  Interfaces.RealVectorInput                 realVectorInput
-                                              [nTotalInputsElements] annotation (Placement(transformation(extent={{-118,-20},{-78,20}})));
-  Interfaces.RealVectorOutput y[nTotalOutputElements] annotation (Placement(transformation(extent={{80,-20},{120,20}})));
+  Modelica.Blocks.Interfaces.RealInput u[nTotalInputsElements]
+    annotation (Placement(transformation(extent={{-120,-20},{-80,20}})));
+  Modelica.Blocks.Interfaces.RealOutput y[nTotalOutputElements]
+    annotation (Placement(transformation(extent={{80,-20},{120,20}})));
 
 equation
-  y[:] =InterfaceFunctions.runInferenceFlatTensor(
-          smartiint,
-          time,
-          realVectorInput,
-          nTotalOutputElements);
+  y[:] = InterfaceFunctions.runInferenceFlatTensor(
+    smartiint,
+    time,
+    u,
+    nTotalOutputElements);
 
   annotation (Icon(coordinateSystem(preserveAspectRatio=false), graphics={Rectangle(
           extent={{-100,100},{100,-100}},
           pattern=LinePattern.None,
           fillColor={255,255,255},
-          fillPattern=FillPattern.Solid),                                 Bitmap(extent={{-102,-100},{102,100}}, fileName="modelica://SMArtIInt/Resources/Images/Icon_Inference.svg")}), Diagram(coordinateSystem(preserveAspectRatio=false)));
+          fillPattern=FillPattern.Solid), Bitmap(extent={{-102,-100},{102,100}},
+          fileName="modelica://SMArtIInt/Resources/Images/Icon_Inference.png")}),
+      Diagram(coordinateSystem(preserveAspectRatio=false)));
 end RunInferenceFlatInput;
