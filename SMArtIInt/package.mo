@@ -9,7 +9,7 @@ annotation (uses(Modelica(version="4.0.0")),
         fillColor={255,255,255},
         fillPattern=FillPattern.Solid), Bitmap(extent={{-100,-100},{100,100}}, fileName=
             "modelica://SMArtIInt/Resources/Images/SMArtIInt_Icon.png")}),
-    version="0.2.0",
+    version="0.2.2",
     conversion(
       from(
         version="0.1.1",
