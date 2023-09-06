@@ -183,8 +183,13 @@ void NeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int 
 		std::string message = Utils::string_format("SMArtInt: Wrong output length: in the interface were %i entries defined, whereas in current function call %i is specified!", m_nOutputEntries, outputLength);
 		mp_modelicaUtilityHelper->ModelicaError(message.c_str());
 	};
-	
-	unsigned int nSteps = mp_timeStepMngmt->manageNewStep(time, m_firstInvoke, input);
+
+    unsigned int nSteps = 0;
+    try {
+        nSteps = mp_timeStepMngmt->manageNewStep(time, m_firstInvoke, input);
+    } catch (std::exception& e) {
+        mp_modelicaUtilityHelper->ModelicaError(e.what());
+    }
 
 	void* p_data = TfLiteTensorData(mp_flatInputTensor);
 
