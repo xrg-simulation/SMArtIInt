@@ -14,7 +14,7 @@ private:
 
 	double m_startTime = 0; // time of the first call
 
-	static const int m_nStoredSteps = 100; // number of store previous steps
+	static const int m_nStoredSteps = 1000; // number of store previous steps
 
 	RollingBuffer<std::vector<double>, double> mp_inputBuffer = RollingBuffer<std::vector<double>, double>(m_nStoredSteps); // buffer for inputs
 	RollingBuffer<Utils::stateInputsContainer, int> m_stateBuffer = RollingBuffer<Utils::stateInputsContainer, int>(m_nStoredSteps); // buffer for states

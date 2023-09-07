@@ -140,7 +140,7 @@ unsigned int InputManagement::manageNewStep(double time, bool firstInvoke, doubl
 			int test;
 			if (!mp_inputBuffer.update(time, 1, test))
 			{
-				throw std::out_of_range("Index not found in buffer - need to go back more than 8 steps after rejection. Contact support!");
+				throw std::out_of_range(Utils::string_format("Index not found in buffer - need to go back more than %i steps after rejection. Contact support!", m_nStoredSteps));
 			}
 
 			std::vector<double>* value = mp_inputBuffer.getCurrentValue();
@@ -159,7 +159,7 @@ unsigned int InputManagement::manageNewStep(double time, bool firstInvoke, doubl
 			int test;
 			if (!m_stateBuffer.update(iStep, 1, test))
 			{
-				throw std::out_of_range("Index not found in buffer - need to go back more than 8 steps after rejection. Contact support!");
+                throw std::out_of_range(Utils::string_format("Index not found in buffer - need to go back more than %i steps after rejection. Contact support!", m_nStoredSteps));
 			}
 		}
 	}
