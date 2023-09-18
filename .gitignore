@@ -3,13 +3,17 @@
 .idea
 CMakeSettings.json
 CSource/cmake-build*
+CSource/out/*
 
 SMArtIInt/Resources/Library/win64/*
 !SMArtIInt/Resources/Library/win64/Delay-V1.lib
 !SMArtIInt/Resources/Library/win64/SMArtIInt.dll
 !SMArtIInt/Resources/Library/win64/tensorflowlite_c.dll
 
-
-CSource/out/*
+SMArtIInt/Resources/ExampleNeuralNets/NNHeatTransfer/ht_log
+SMArtIInt/Resources/ExampleNeuralNets/NNHeatTransfer/large*
+SMArtIInt/Resources/ExampleNeuralNets/NNHeatTransfer/small*
+SMArtIInt/Resources/ExampleNeuralNets/NNHeatTransfer/*.pckl
 
 _dymWork/*
+_deploy/*

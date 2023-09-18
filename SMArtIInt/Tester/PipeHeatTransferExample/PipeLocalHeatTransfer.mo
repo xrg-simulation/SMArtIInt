@@ -9,7 +9,7 @@ model PipeLocalHeatTransfer
   Modelica.Blocks.Interfaces.RealOutput Nu[batchSize] annotation (Placement(transformation(extent={{90,-10},{110,10}})));
   Blocks.EvaluateSimpleFeedForwardNeuralNetwork evalNN(
     pathToTfLiteFile=Modelica.Utilities.Files.loadResource(
-        "modelica://SMArtIInt//..//ExampleNeuralNets//NNHeatTransfer//model_large.tflite"),
+        "modelica://SMArtIInt//Resources//ExampleNeuralNets//NNHeatTransfer//model_large.tflite"),
     numberOfInputs=3,
     numberOfOutputs=1,
     batchSize=batchSize) annotation (Placement(transformation(extent={{-10,-10},{10,10}})));

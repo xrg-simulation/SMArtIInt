@@ -106,14 +106,16 @@ equation
       thickness=0.5));
   connect(volumeFlowRate1.port_b, temperature.port_a) annotation (Line(points={{50,0},{56,0}}, color={0,127,255}));
   connect(temperature.port_b, sink.ports[1]) annotation (Line(points={{76,0},{82,0}}, color={0,127,255}));
-  connect(controller.u, calcCntrlDev.y) annotation (Line(points={{20,-40},{33,-40}}, color={0,0,127}));
+  connect(controller.u, calcCntrlDev.y) annotation (Line(points={{18.6,-40},{33,-40}},
+                                                                                     color={0,0,127}));
   connect(calcCntrlDev.u2, combiTimeTable.y[1]) annotation (Line(points={{56,-46},{66,-46},{66,-64},{75,-64}}, color={0,0,127}));
   connect(calcCntrlDev.u1, temperature.T) annotation (Line(points={{56,-34},{66,-34},{66,-11}}, color={0,0,127}));
   connect(combiTimeTable.y[2], boundary.m_flow_in) annotation (Line(points={{75,-64},{-90,-64},{-90,8},{-70,8}}, color={0,0,127}));
   connect(heatCapacitor.port, thermalResistor.port_a) annotation (Line(points={{4,72},{20,72}}, color={191,0,0}));
   connect(thermalResistor.port_b, lossHeatFlow.port) annotation (Line(points={{40,72},{50,72}}, color={191,0,0}));
   connect(lossHeatFlow.T, lossNoise.y) annotation (Line(points={{72,72},{79,72}}, color={0,0,127}));
-  connect(controller.y, controlHeatFlow.Q_flow) annotation (Line(points={{-3,-40},{-80,-40},{-80,52},{-72,52}}, color={0,0,127}));
+  connect(controller.y, controlHeatFlow.Q_flow) annotation (Line(points={{-2.4,-40},{-80,-40},{-80,52},{-72,52}},
+                                                                                                                color={0,0,127}));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(coordinateSystem(preserveAspectRatio=false)),
     experiment(
       StopTime=300000,
