@@ -2,7 +2,7 @@ within SMArtIInt.Tester.PipeHeatTransferExample;
 model PipeLocalHeatTransfer_smallNN
   extends BaseClasses.BaseFeedForwardNeuralNet(final numberOfOutputs=1, final numberOfInputs=3,
   pathToTfLiteFile=Modelica.Utilities.Files.loadResource(
-        "modelica://SMArtIInt//Resources//ExampleNeuralNets//ExampleNeuralNets//NNHeatTransfer//model_small.tflite"));
+        "modelica://SMArtIInt//Resources//ExampleNeuralNets//model_small.tflite"));
 
   Modelica.Blocks.Interfaces.RealInput Re[batchSize] annotation (Placement(transformation(extent={{-120,40},{-80,80}})));
   Modelica.Blocks.Interfaces.RealInput Pr[batchSize] annotation (Placement(transformation(extent={{-120,-20},{-80,20}})));

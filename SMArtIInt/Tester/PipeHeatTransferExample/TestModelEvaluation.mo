@@ -13,8 +13,7 @@ model TestModelEvaluation
   final parameter Real acc(unit="m/s2") = 1;
   Modelica.Units.SI.Velocity vs;
 
-  replaceable Tester.PipeHeatTransferExample.NNHeatTransfer heatTransfer constrainedby
-    Modelica.Fluid.Pipes.BaseClasses.HeatTransfer.PartialPipeFlowHeatTransfer(
+  replaceable Tester.PipeHeatTransferExample.NNHeatTransfer heatTransfer constrainedby Modelica.Fluid.Pipes.BaseClasses.HeatTransfer.PartialPipeFlowHeatTransfer(
     redeclare final package Medium = Medium,
     final n=n,
     final nParallel=1,
