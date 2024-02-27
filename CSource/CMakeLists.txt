@@ -91,30 +91,37 @@ include(CMake/GlobalSettingsInclude.cmake OPTIONAL)
 ################################################################################
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# set the output directory
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-	if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-		set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/linux64/")
-		set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/linux64/")
-		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/linux64/")
-	else ()
-		set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/linux32/")
-		set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/linux32/")
-		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/linux32/")
-	endif()
-else ()
-	if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
-		set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/win64/")
-		set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/win64/")
-		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/win64/")
-	elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x86")
-		set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/win32/")
-		set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/win32/")
-		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/win32/")
-	endif()
-	
-endif ()
+# Detect target platform
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    if(MSYS OR MINGW)
+        if("$ENV{MSYSTEM}" STREQUAL "UCRT64")
+            set(TARGET_SYSTEM_NAME "ucrt")
+        elseif("$ENV{MSYSTEM}" STREQUAL "MINGW64" OR "$ENV{MSYSTEM}" STREQUAL "MINGW32")
+            set(TARGET_SYSTEM_NAME "mingw")
+        else()
+            set(TARGET_SYSTEM_NAME "win")
+        endif()
+    else(MSYS OR MINGW)
+        set(TARGET_SYSTEM_NAME "win")
+    endif(MSYS OR MINGW)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+  set(TARGET_SYSTEM_NAME "linux")
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+  set(TARGET_SYSTEM_NAME "darwin")
+else()
+  message(FATAL_ERROR "Unknown target system: ${CMAKE_SYSTEM_NAME}")
+endif()
 
+if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+  set(TARGET_PLATFORM "${TARGET_SYSTEM_NAME}64")
+else()
+  set(TARGET_PLATFORM "${TARGET_SYSTEM_NAME}32")
+endif()
+
+# set the output directory
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/${TARGET_PLATFORM}/")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/${TARGET_PLATFORM}/")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../SMArtIInt/Resources/Library/${TARGET_PLATFORM}/")
 
 ################################################################################
 # Sub-projects
@@ -124,6 +131,3 @@ if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
 endif()
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/../External/ClaRaDelay/CSource "ClaRaDelay")
-
-
-
