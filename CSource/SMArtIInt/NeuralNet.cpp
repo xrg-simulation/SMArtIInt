@@ -52,6 +52,10 @@ NeuralNet::NeuralNet(ModelicaUtilityHelper* p_modelicaUtilityHelper, const char*
 	}
 
 	// create the time step management object
+    if (stateful && fixInterval <= 0) {
+        mp_modelicaUtilityHelper->ModelicaError("A stateful RNN is used with a samplePeriod less or equal than 0. "
+                                                "Please enter the grid interval used to train the model as samplePeriod!");
+    }
 	mp_timeStepMngmt = new InputManagement(stateful, fixInterval, m_nInputEntries);
 
 	// perform steps to create model
