@@ -11,7 +11,7 @@ date=$(git show -s --format=%ci)
 rm -r _deploy/
 mkdir _deploy/
 
-cp -r SMArtIInt/ _deploy/SMArtIInt/
+Robocopy.exe SMArtIInt ./_deploy/SMArtIInt //e //xd ./SMArtIInt/Resources/ExampleNeuralNets/venv/ ./SMArtIInt/Resources/ExampleNeuralNets/NNHeatTransfer/ht_log ./SMArtIInt/Resources/ExampleNeuralNets/NNHeatTransfer/large* ./SMArtIInt/Resources/ExampleNeuralNets/NNHeatTransfer/small* ./SMArtIInt/Resources/ExampleNeuralNets/.idea
 
 sed -i -e "s/%build%/$build/g" ./_deploy/SMArtIInt/package.mo
 sed -i -e "s/%version%/$version/g" ./_deploy/SMArtIInt/package.mo

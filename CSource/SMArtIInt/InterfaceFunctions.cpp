@@ -7,7 +7,8 @@ void* NeuralNet_createObject(void* modelicaUtilityHelper, const char* tfLiteMode
 	ModelicaUtilityHelper* p_modelicaUtilityHelper = (ModelicaUtilityHelper*)modelicaUtilityHelper;
 	#ifndef NDEBUG
 	p_modelicaUtilityHelper->ModelicaMessage("!! SMArtIInt running in Debug Mode !!\n\n");
-	#endif
+    #endif
+    //ToDo: check fixStep (must it always be >0???)
 	
 	NeuralNet* p_neuralNet = new NeuralNet (p_modelicaUtilityHelper, tfLiteModelPath, dymInputDim, p_dymInputSizes, dymOutputDim, p_dymOutputSizes, stateful, fixStep);
 	
