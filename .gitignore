@@ -17,3 +17,4 @@ SMArtIInt/Resources/ExampleNeuralNets/NNHeatTransfer/*.pckl
 
 _dymWork/*
 _deploy/*
+_cmake/*
