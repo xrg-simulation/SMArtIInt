@@ -6,6 +6,7 @@ cmake_policy(SET CMP0091 NEW)
 ################################################################################
 set(Headerdateien
     ${CMAKE_CURRENT_SOURCE_DIR}/../External/tensorflow/tensorflow/lite/c/c_api.h
+	${CMAKE_CURRENT_SOURCE_DIR}/../External/onnx/onnxruntime/include/onnxruntime_cxx_api.h
     "InputManagement.h"
     "InterfaceFunctions.h"
     "NeuralNet.h"
@@ -51,4 +52,9 @@ else ()
 	target_link_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}//External"
     )
+	set(ADDITIONAL_LIBRARY_DEPENDENCIES "onnxruntime")
+	target_link_libraries(${PROJECT_NAME} PUBLIC "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
+	target_link_directories(${PROJECT_NAME} PUBLIC
+			"${CMAKE_CURRENT_SOURCE_DIR}//External"
+	)
 endif()

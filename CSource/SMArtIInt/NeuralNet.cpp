@@ -5,6 +5,38 @@
 #include "tensorflow/lite/c/c_api.h"
 #include "Utils.h"
 #include <stdexcept>
+#include <cstdlib>
+#include <sstream>
+#include <algorithm>
+
+void print_tensor_data(const Ort::Value& value) {
+    // Überprüfe, ob der Wert ein Tensor ist
+    if (value.IsTensor()) {
+        // Zugriff auf die Form des Tensors
+        auto tensor_info = value.GetTensorTypeAndShapeInfo();
+        auto tensor_shape = tensor_info.GetShape();
+
+        // Überprüfe, ob der Tensor vom Typ float ist
+        if (tensor_info.GetElementType() == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT) {
+            // Zugriff auf die Daten des Tensors als float
+            const float* tensor_data = value.GetTensorData<float>();
+
+            // Ausgabe der Daten des Tensors
+            std::cout << "Tensor Data: [";
+            for (size_t i = 0; i < tensor_info.GetElementCount(); ++i) {
+                std::cout << tensor_data[i];
+                if (i < tensor_info.GetElementCount() - 1) std::cout << ", ";
+            }
+            std::cout << "]" << std::endl;
+        } else {
+            std::cout << "Tensor Data Type not supported!" << std::endl;
+        }
+    } else {
+        std::cout << "Value is not a Tensor!" << std::endl;
+    }
+}
+
+
 
 NeuralNet::NeuralNet(ModelicaUtilityHelper* p_modelicaUtilityHelper, const char* tfLiteModelPath, unsigned int dymInputDim,
 	unsigned int* p_dymInputSizes, unsigned int dymOutputDim, unsigned int* p_dymOutputSizes,
@@ -58,8 +90,6 @@ NeuralNet::NeuralNet(ModelicaUtilityHelper* p_modelicaUtilityHelper, const char*
     }
 	mp_timeStepMngmt = new InputManagement(stateful, fixInterval, m_nInputEntries);
 
-	// perform steps to create model
-	loadAndInit(tfLiteModelPath);
 }
 
 NeuralNet::~NeuralNet()
@@ -75,16 +105,30 @@ NeuralNet::~NeuralNet()
 	m_outputDim = 0;
 	m_nOutputEntries = 0;
 
-	// clean up allocated tflite stuff
-	if (mp_interpreter) TfLiteInterpreterDelete(mp_interpreter);
-	if (mp_options) TfLiteInterpreterOptionsDelete(mp_options);
-	if (mp_model) TfLiteModelDelete(mp_model);
-
 	// clean up time step manager
 	if (mp_timeStepMngmt) delete mp_timeStepMngmt;
 }
 
-void NeuralNet::loadAndInit(const char* tfliteModelPath)
+// TfLite
+
+TfLiteNeuralNet::TfLiteNeuralNet(ModelicaUtilityHelper *p_modelicaUtilityHelper, const char *tfLiteModelPath,
+                                 unsigned int dymInputDim, unsigned int *p_dymInputSizes, unsigned int dymOutputDim,
+                                 unsigned int *p_dymOutputSizes, bool stateful, double fixInterval) : NeuralNet(
+        p_modelicaUtilityHelper, tfLiteModelPath,
+        dymInputDim, p_dymInputSizes, dymOutputDim, p_dymOutputSizes,
+        stateful, fixInterval) {
+    // perform steps to create model
+    TfLiteNeuralNet::loadAndInit(tfLiteModelPath);
+}
+
+TfLiteNeuralNet::~TfLiteNeuralNet() {
+    // clean up allocated tflite stuff
+	if (mp_interpreter) TfLiteInterpreterDelete(mp_interpreter);
+	if (mp_options) TfLiteInterpreterOptionsDelete(mp_options);
+	if (mp_model) TfLiteModelDelete(mp_model);
+}
+
+void TfLiteNeuralNet::loadAndInit(const char* tfliteModelPath)
 {
 	m_tfliteModelPath = tfliteModelPath;
 
@@ -171,11 +215,10 @@ void NeuralNet::loadAndInit(const char* tfliteModelPath)
 	// dimensions etc of output tensor is only available after calling invoke so we check the infos after
 	// the call - that it is only done once use the following variable
 	m_firstInvoke = true;
-
 	return;
 }
 
-void NeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int inputLength, double* output, unsigned int outputLength)
+void TfLiteNeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int inputLength, double* output, unsigned int outputLength)
 {
 	// check the sizes
 	if (m_nInputEntries != inputLength) {
@@ -246,7 +289,7 @@ void NeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int 
 	return;
 }
 
-void NeuralNet::initializeStates(double* p_stateValues, const unsigned int& nStateValues)
+void TfLiteNeuralNet::initializeStates(double* p_stateValues, const unsigned int& nStateValues)
 {
 	try {
 		mp_timeStepMngmt->initialize(p_stateValues, nStateValues);
@@ -256,61 +299,7 @@ void NeuralNet::initializeStates(double* p_stateValues, const unsigned int& nSta
 	}
 }
 
-void NeuralNet::checkInputTensorSize()
-{
-	if (TfLiteTensorNumDims(mp_flatInputTensor) != m_inputDim)
-	{
-		std::string message = Utils::string_format("SMArtInt: Wrong input dimensions : the loaded model has %i dimensions whereas in the interface %i is specified!", TfLiteTensorNumDims(mp_flatInputTensor), m_inputDim);
-		mp_modelicaUtilityHelper->ModelicaError(message.c_str());
-	}
-	// check the sizes in each dimension except for the first which is the batch size
-	for (unsigned int i = 1; i < m_inputDim; ++i) {
-		if (TfLiteTensorDim(mp_flatInputTensor, i) != int(mp_inputSizes[i]))
-		{
-			std::string message = "SMArtInt: Wrong input sizes. The loaded model has the sizes {";
-			for (unsigned int j = 0; j < m_inputDim; ++j) {
-				message += Utils::string_format("%i", TfLiteTensorDim(mp_flatInputTensor, j));
-				if (j < (m_inputDim - 1)) message += ", ";
-			}
-			message += "}, whereas in the interface the sizes {";
-			for (unsigned int j = 0; j < m_inputDim; ++j) {
-				message += Utils::string_format("%i", mp_inputSizes[j]);
-				if (j < m_inputDim - 1) message += ", ";
-			}
-			message += "} were specified!";
-			mp_modelicaUtilityHelper->ModelicaError(message.c_str());
-		}
-	}
-}
-
-void NeuralNet::checkOutputTensorSize(const TfLiteTensor* p_flatOutputTensor)
-{
-	// check dimensions
-	if (TfLiteTensorNumDims(p_flatOutputTensor) != m_outputDim)
-	{
-		std::string message = Utils::string_format("SMArtInt: Wrong output dimensions : the loaded model has %i dimensions whereas in the interface %i is specified!", TfLiteTensorNumDims(p_flatOutputTensor), m_outputDim);
-		mp_modelicaUtilityHelper->ModelicaError(message.c_str());
-	}
-	for (unsigned int i = 0; i < m_outputDim; ++i) {
-		if (TfLiteTensorDim(p_flatOutputTensor, i) != int(mp_outputSizes[i]))
-		{
-			std::string message = "SMArtInt: Wrong output sizes. The loaded model has the sizes {";
-			for (unsigned int j = 0; j < m_outputDim; ++j) {
-				message += Utils::string_format("%i", TfLiteTensorDim(p_flatOutputTensor, j));
-				if (j < (m_outputDim - 1)) message += ", ";
-			}
-			message += "}, whereas in the interface the sizes {";
-			for (unsigned int j = 0; j < m_outputDim; ++j) {
-				message += Utils::string_format("%i", mp_outputSizes[j]);
-				if (j < m_outputDim - 1) message += ", ";
-			}
-			message += "} were specified!";
-			mp_modelicaUtilityHelper->ModelicaError(message.c_str());
-		}
-	}
-}
-
-void NeuralNet::setInputCastFunction(TfLiteTensor* tensor)
+void TfLiteNeuralNet::setInputCastFunction(TfLiteTensor* tensor)
 {
 	switch (TfLiteTensorType(tensor)) {
 	case kTfLiteFloat32:
@@ -322,7 +311,7 @@ void NeuralNet::setInputCastFunction(TfLiteTensor* tensor)
 	}
 }
 
-void NeuralNet::setOutputCastFunction(const TfLiteTensor* tensor)
+void TfLiteNeuralNet::setOutputCastFunction(const TfLiteTensor* tensor)
 {
 	switch (TfLiteTensorType(tensor))
 	{
@@ -334,4 +323,329 @@ void NeuralNet::setOutputCastFunction(const TfLiteTensor* tensor)
 		mp_modelicaUtilityHelper->ModelicaError("Could not convert output data - SMArtIInt currently only supports TFLite models using floats");
 		break;
 	}
+}
+
+void TfLiteNeuralNet::checkInputTensorSize()
+{
+    if (TfLiteTensorNumDims(mp_flatInputTensor) != m_inputDim)
+    {
+        std::string message = Utils::string_format("SMArtInt: Wrong input dimensions : the loaded model has %i dimensions whereas in the interface %i is specified!", TfLiteTensorNumDims(mp_flatInputTensor), m_inputDim);
+        mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+    }
+    // check the sizes in each dimension except for the first which is the batch size
+    for (unsigned int i = 1; i < m_inputDim; ++i) {
+        if (TfLiteTensorDim(mp_flatInputTensor, i) != int(mp_inputSizes[i]))
+        {
+            std::string message = "SMArtInt: Wrong input sizes. The loaded model has the sizes {";
+            for (unsigned int j = 0; j < m_inputDim; ++j) {
+                message += Utils::string_format("%i", TfLiteTensorDim(mp_flatInputTensor, j));
+                if (j < (m_inputDim - 1)) message += ", ";
+            }
+            message += "}, whereas in the interface the sizes {";
+            for (unsigned int j = 0; j < m_inputDim; ++j) {
+                message += Utils::string_format("%i", mp_inputSizes[j]);
+                if (j < m_inputDim - 1) message += ", ";
+            }
+            message += "} were specified!";
+            mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+        }
+    }
+}
+
+void TfLiteNeuralNet::checkOutputTensorSize(const TfLiteTensor* p_flatOutputTensor)
+{
+    // check dimensions
+    if (TfLiteTensorNumDims(p_flatOutputTensor) != m_outputDim)
+    {
+        std::string message = Utils::string_format("SMArtInt: Wrong output dimensions : the loaded model has %i dimensions whereas in the interface %i is specified!", TfLiteTensorNumDims(p_flatOutputTensor), m_outputDim);
+        mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+    }
+    for (unsigned int i = 0; i < m_outputDim; ++i) {
+        if (TfLiteTensorDim(p_flatOutputTensor, i) != int(mp_outputSizes[i]))
+        {
+            std::string message = "SMArtInt: Wrong output sizes. The loaded model has the sizes {";
+            for (unsigned int j = 0; j < m_outputDim; ++j) {
+                message += Utils::string_format("%i", TfLiteTensorDim(p_flatOutputTensor, j));
+                if (j < (m_outputDim - 1)) message += ", ";
+            }
+            message += "}, whereas in the interface the sizes {";
+            for (unsigned int j = 0; j < m_outputDim; ++j) {
+                message += Utils::string_format("%i", mp_outputSizes[j]);
+                if (j < m_outputDim - 1) message += ", ";
+            }
+            message += "} were specified!";
+            mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+        }
+    }
+}
+
+// ONNX
+OnnxNeuralNet::OnnxNeuralNet(ModelicaUtilityHelper *p_modelicaUtilityHelper, const char *onnxModelPath,
+                                 unsigned int dymInputDim, unsigned int *p_dymInputSizes, unsigned int dymOutputDim,
+                                 unsigned int *p_dymOutputSizes, bool stateful, double fixInterval) : NeuralNet(
+        p_modelicaUtilityHelper, onnxModelPath,
+        dymInputDim, p_dymInputSizes, dymOutputDim, p_dymOutputSizes,
+        stateful, fixInterval) {
+    // perform steps to create model
+    OnnxNeuralNet::loadAndInit(onnxModelPath);
+}
+
+OnnxNeuralNet::~OnnxNeuralNet() {
+    // clean up allocated onnx stuff - Correct way?
+	//if (mp_session) delete(mp_session);
+	if (mp_options) delete(mp_options);
+	if (mp_model) delete(mp_model);
+}
+
+void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
+{
+    m_onnxModelPath = onnxModelPath;
+
+    static Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "test_onnx");
+    mp_model = &env;
+    if (!env) {
+        std::string message = Utils::string_format("SMArtInt: Model not found - check path: %s", m_onnxModelPath);
+        mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+    };
+
+    // convert const char* in wchar_t*
+    size_t length = 0;
+    mbstowcs_s(&length, nullptr, 0, onnxModelPath, _TRUNCATE);
+    auto* model_path_wchar = new wchar_t[length + 1];
+    // Create the interpreter.
+    mbstowcs_s(nullptr, model_path_wchar, length + 1, onnxModelPath, length);
+
+    static Ort::Session session = Ort::Session(env, model_path_wchar , mp_options);
+    mp_session = &session;
+
+    if (!session) {
+        mp_modelicaUtilityHelper->ModelicaError("Failed to create interpreter Test");
+    }
+    // Allocate tensor buffers.
+    Ort::AllocatorWithDefaultOptions allocator;
+    for (std::size_t i = 0; i < mp_session->GetInputCount(); i++) {
+        m_input_names.emplace_back(mp_session->GetInputNameAllocated(i, allocator).get());
+        m_input_shapes = mp_session->GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
+        std::ostringstream oss;
+        oss << "\t" << m_input_names.at(i) << " : " << print_shape(m_input_shapes) << std::endl;
+        std::string message = oss.str();
+        mp_modelicaUtilityHelper->ModelicaMessage(message.c_str());
+    }
+    for (std::size_t i = 0; i < mp_session->GetOutputCount(); i++) {
+        m_output_names.emplace_back(mp_session->GetOutputNameAllocated(i, allocator).get());
+        m_output_shapes = mp_session->GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
+    }
+    if (mp_session->GetInputCount() != 1 && !mp_timeStepMngmt->isActive()) {
+        mp_modelicaUtilityHelper->ModelicaError("SMArtInt can only handle models with single input");
+    }
+
+    // check input and output size
+    checkInputTensorSize();
+    checkOutputTensorSize();
+    // adjust first dimension which is batch size
+    if (m_input_shapes[0]==-1){
+        m_input_shapes[0] = 1;
+    }
+
+
+    // check the number of outputs
+    if (mp_session->GetOutputCount() != 1) {
+        if (mp_timeStepMngmt->isActive()) {
+            if (mp_session->GetOutputCount() != mp_session->GetInputCount()) {
+                mp_modelicaUtilityHelper->ModelicaError("SMArtInt: Stateful handling can only be done if model has the same number of inputs (=) and outputs");
+            }
+        }
+        else {
+            mp_modelicaUtilityHelper->ModelicaError("SMArtInt can only handle models with single output!");
+        }
+    }
+
+    // Handle states as additional inputs
+    if (mp_timeStepMngmt->isActive()) {
+        mp_modelicaUtilityHelper->ModelicaMessage("Handling additional inputs as states");
+        for (int i = 1; i < mp_session->GetInputCount(); ++i) {
+            try {
+                //mp_timeStepMngmt->addStateInp(mp_session->GetInputTypeInfo(i));
+            }
+            catch (const std::invalid_argument& e) {
+                mp_modelicaUtilityHelper->ModelicaError(e.what());
+            }
+        }
+        // Initialize states if available
+        mp_timeStepMngmt->initialize();
+    }
+
+    m_firstInvoke = false;
+
+    return;
+}
+
+std::string OnnxNeuralNet::print_shape(const std::vector<std::int64_t>& v) {
+    std::stringstream ss("");
+    for (std::size_t i = 0; i < v.size() - 1; i++) ss << v[i] << "x";
+    ss << v[v.size() - 1];
+    return ss.str();
+}
+
+void OnnxNeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int inputLength, double* output, unsigned int outputLength)
+{
+    // check the sizes
+    if (m_nInputEntries != inputLength) {
+        std::string message = Utils::string_format("SMArtInt: Wrong input length: in the interface were %i entries defined, whereas in current function call %i is specified!", m_nInputEntries, inputLength);
+        mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+    };
+    // check output size
+    if (m_nOutputEntries != outputLength) {
+        std::string message = Utils::string_format("SMArtInt: Wrong output length: in the interface were %i entries defined, whereas in current function call %i is specified!", m_nOutputEntries, outputLength);
+        mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+    };
+
+    unsigned int nSteps = 0;
+    try {
+        nSteps = mp_timeStepMngmt->manageNewStep(time, m_firstInvoke, input);
+    } catch (std::exception& e) {
+        mp_modelicaUtilityHelper->ModelicaError(e.what());
+    }
+
+    std::vector<const char*> input_names_char(m_input_names.size(), nullptr);
+    std::transform(std::begin(m_input_names), std::end(m_input_names), std::begin(input_names_char),
+                   [&](const std::string& str) { return str.c_str(); });
+
+    std::vector<const char*> output_names_char(m_output_names.size(), nullptr);
+    std::transform(std::begin(m_output_names), std::end(m_output_names), std::begin(output_names_char),
+                   [&](const std::string& str) { return str.c_str(); });
+
+    for (unsigned int i = 0; i < nSteps; ++i)
+    {
+        double* inpInput = mp_timeStepMngmt->handleInpts(time, i, input, m_firstInvoke);
+
+        // we write the data directly into the data array of the tensor - the casting function is set to the correct
+        // type
+        std::vector<float> input_data(m_nInputEntries);
+        for (unsigned int j = 0; j < m_nInputEntries; ++j) {
+            input_data[j] = static_cast<float>(inpInput[j]);
+        }
+//        auto input_shape = mp_session->GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
+//        if (input_shape[0]==-1){
+//            input_shape[0] = 1;
+//        }
+
+        // Erstelle einen Tensor aus den Daten
+        Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu( OrtDeviceAllocator, OrtMemTypeDefault);
+        std::vector<int64_t> dims = {1, static_cast<int64_t>(input_data.size())};
+        Ort::Value tensor = Ort::Value::CreateTensor<float>(memInfo, input_data.data(), input_data.size(), m_input_shapes.data(), m_input_shapes.size());
+
+        // Run inference
+        try {
+            auto output_tensors = mp_session->Run(Ort::RunOptions{nullptr}, input_names_char.data(), &tensor,
+                                              input_names_char.size(), output_names_char.data(), output_names_char.size());
+
+//            if (output_tensors.size() == mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[0] && output_tensors[0].IsTensor()) {
+//                std::string message = Utils::string_format("Inference output dimension is %i and expected is size %i \n", mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[0]);
+//                mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+//            }
+//            std::cout << "Value is: " << output_tensors[0] << std::endl;
+
+            auto result = values_to_float(output_tensors);
+            *output = static_cast<double>(result[0]);
+//            std::cout << "Float Value is: " << static_cast<double>(result[0]) << std::endl;
+
+
+        } catch (const Ort::Exception& exception) {
+            std::string message = "ERROR running model inference: " + std::string(exception.what()) + "\n";
+            mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+            exit(-1);
+        };
+    }
+
+    return;
+}
+
+void OnnxNeuralNet::initializeStates(double* p_stateValues, const unsigned int& nStateValues)
+{
+    try {
+        mp_timeStepMngmt->initialize(p_stateValues, nStateValues);
+    }
+    catch (const std::invalid_argument& e) {
+        mp_modelicaUtilityHelper->ModelicaError(e.what());
+    }
+}
+
+void OnnxNeuralNet::checkInputTensorSize()
+{
+    if (mp_session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetDimensionsCount() != m_inputDim)
+    {
+        std::string message = Utils::string_format("SMArtInt: Wrong input dimensions : the loaded model has %i dimensions whereas in the interface %i is specified!", mp_session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetDimensionsCount(), m_inputDim);
+        mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+    }
+    // check the sizes in each dimension except for the first which is the batch size
+    for (unsigned int i = 1; i < m_inputDim; ++i) {
+        if (mp_session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[i] != int(mp_inputSizes[i]))
+        {
+            std::string message = "SMArtInt: Wrong input sizes. The loaded model has the sizes {";
+            for (unsigned int j = 0; j < m_inputDim; ++j) {
+                message += Utils::string_format("%i", abs(mp_session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[j]));
+                if (j < (m_inputDim - 1)) message += ", ";
+            }
+            message += "}, whereas in the interface the sizes {";
+            for (unsigned int j = 0; j < m_inputDim; ++j) {
+                message += Utils::string_format("%i", mp_inputSizes[j]);
+                if (j < m_inputDim - 1) message += ", ";
+            }
+            message += "} were specified!";
+            mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+        }
+    }
+}
+
+void OnnxNeuralNet::checkOutputTensorSize()
+{
+    // check dimensions
+    if (mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetDimensionsCount() != m_outputDim)
+    {
+        std::string message = Utils::string_format("SMArtInt: Wrong output dimensions : the loaded model has %i dimensions whereas in the interface %i is specified!", mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetDimensionsCount(), m_outputDim);
+        mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+    }
+    for (unsigned int i = 0; i < m_outputDim; ++i) {
+        if (abs(mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[i]) != int(mp_outputSizes[i]))
+        {
+            std::string message = "SMArtInt: Wrong output sizes. The loaded model has the sizes {";
+            for (unsigned int j = 0; j < m_outputDim; ++j) {
+                message += Utils::string_format("%i", abs(mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[j])); // abs for not defined batch size (-1)
+                if (j < (m_outputDim - 1)) message += ", ";
+            }
+            message += "}, whereas in the interface the sizes {";
+            for (unsigned int j = 0; j < m_outputDim; ++j) {
+                message += Utils::string_format("%i", mp_outputSizes[j]);
+                if (j < m_outputDim - 1) message += ", ";
+            }
+            message += "} were specified!";
+            mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+        }
+    }
+}
+
+
+std::vector<float> OnnxNeuralNet::values_to_float(const std::vector<Ort::Value>& values) {
+    std::vector<float> result;
+    for (const auto& value : values) {
+        // Überprüfe, ob der Wert ein Tensor ist
+        if (value.IsTensor()) {
+            // Zugriff auf die Daten des Tensors
+            auto tensor_info = value.GetTensorTypeAndShapeInfo();
+            if (tensor_info.GetElementType() == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT) {
+                // Zugriff auf die Daten des Tensors als float
+                auto* tensor_data = value.GetTensorData<float>();
+                // Hänge die Daten des Tensors an das Ergebnisvektor an
+                result.insert(result.end(), tensor_data, tensor_data + tensor_info.GetElementCount());
+            } else {
+                // Fehler, wenn der Tensor nicht vom Typ float ist
+                throw std::runtime_error("Tensor Data Type not supported!");
+            }
+        } else {
+            // Fehler, wenn der Wert kein Tensor ist
+            throw std::runtime_error("Value is not a Tensor!");
+        }
+    }
+    return result;
 }

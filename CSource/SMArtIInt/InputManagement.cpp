@@ -118,6 +118,7 @@ double* InputManagement::handleInpts(double time, unsigned int iStep, double* fl
 	else {
 		input_pointer = flatInp;
 	}
+
 	return input_pointer;
 }
 
