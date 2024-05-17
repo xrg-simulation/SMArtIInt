@@ -27,7 +27,7 @@ void print_tensor_data(const Ort::Value& value) {
                 std::cout << tensor_data[i];
                 if (i < tensor_info.GetElementCount() - 1) std::cout << ", ";
             }
-            std::cout << "]" << std::endl;
+            std::cout << "]\n" << std::endl;
         } else {
             std::cout << "Tensor Data Type not supported!" << std::endl;
         }
@@ -131,7 +131,6 @@ TfLiteNeuralNet::~TfLiteNeuralNet() {
 void TfLiteNeuralNet::loadAndInit(const char* tfliteModelPath)
 {
 	m_tfliteModelPath = tfliteModelPath;
-
 	//mp_model = TfLiteModelCreateFromFile(m_tfliteModelPath);
 	mp_model = TfLiteModelCreateFromFile(m_tfliteModelPath);
 	// zero pointer is returned if not found
@@ -246,8 +245,8 @@ void TfLiteNeuralNet::runInferenceFlatTensor(double time, double* input, unsigne
 
 		// we write the data directly into the data array of the tensor - the casting function is set to the correct
 		// type
-		for (unsigned int i = 0; i < m_nInputEntries; ++i) {
-			mfp_castInput(inpInput[i], p_data, i);
+		for (unsigned int j = 0; j < m_nInputEntries; ++j) {
+			mfp_castInput(inpInput[j], p_data, j);
 		}
 
 		// Run inference
@@ -392,8 +391,7 @@ OnnxNeuralNet::OnnxNeuralNet(ModelicaUtilityHelper *p_modelicaUtilityHelper, con
 
 OnnxNeuralNet::~OnnxNeuralNet() {
     // clean up allocated onnx stuff - Correct way?
-	//if (mp_session) delete(mp_session);
-	if (mp_options) delete(mp_options);
+	if (mp_session) delete(mp_session);
 	if (mp_model) delete(mp_model);
 }
 
@@ -431,10 +429,12 @@ void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
         std::string message = oss.str();
         mp_modelicaUtilityHelper->ModelicaMessage(message.c_str());
     }
+    m_input_shapes = mp_session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
     for (std::size_t i = 0; i < mp_session->GetOutputCount(); i++) {
         m_output_names.emplace_back(mp_session->GetOutputNameAllocated(i, allocator).get());
         m_output_shapes = mp_session->GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
     }
+    m_output_shapes = mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
     if (mp_session->GetInputCount() != 1 && !mp_timeStepMngmt->isActive()) {
         mp_modelicaUtilityHelper->ModelicaError("SMArtInt can only handle models with single input");
     }
@@ -443,9 +443,7 @@ void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
     checkInputTensorSize();
     checkOutputTensorSize();
     // adjust first dimension which is batch size
-    if (m_input_shapes[0]==-1){
-        m_input_shapes[0] = 1;
-    }
+    m_input_shapes[0] = (m_input_shapes[0] == -1) ? 1 : m_input_shapes[0];
 
 
     // check the number of outputs
@@ -459,13 +457,30 @@ void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
             mp_modelicaUtilityHelper->ModelicaError("SMArtInt can only handle models with single output!");
         }
     }
+    //auto Test = mp_session->GetInputTypeInfo(1);
+
 
     // Handle states as additional inputs
     if (mp_timeStepMngmt->isActive()) {
         mp_modelicaUtilityHelper->ModelicaMessage("Handling additional inputs as states");
+        Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu( OrtDeviceAllocator, OrtMemTypeDefault);
+        std::vector<std::vector<float>> tensorData;
         for (int i = 1; i < mp_session->GetInputCount(); ++i) {
             try {
-                //mp_timeStepMngmt->addStateInp(mp_session->GetInputTypeInfo(i));
+                std::vector<int64_t> input_shape;
+                input_shape = mp_session->GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
+                input_shape[0] = (input_shape[0] == -1) ? 1 : input_shape[0];
+
+                size_t totalSize = 1;
+                for (int64_t dim : input_shape) {
+                    totalSize *= dim;
+                }
+                std::vector<float> tensorDummies(totalSize, 0.0f);
+                tensorData.push_back(tensorDummies);
+                Ort::Value* tensor = new Ort::Value(Ort::Value::CreateTensor<float>(memInfo, tensorData[i-1].data(), tensorData[i-1].size(), input_shape.data(), input_shape.size()));
+                //static auto tensor = Ort::Value::CreateTensor<float>(memInfo, tensorData[i-1].data(), tensorData[i-1].size(), input_shape.data(), input_shape.size());
+                mp_timeStepMngmt->addStateInp(tensor);
+
             }
             catch (const std::invalid_argument& e) {
                 mp_modelicaUtilityHelper->ModelicaError(e.what());
@@ -475,7 +490,7 @@ void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
         mp_timeStepMngmt->initialize();
     }
 
-    m_firstInvoke = false;
+//    m_firstInvoke = false;
 
     return;
 }
@@ -499,7 +514,7 @@ void OnnxNeuralNet::runInferenceFlatTensor(double time, double* input, unsigned 
         std::string message = Utils::string_format("SMArtInt: Wrong output length: in the interface were %i entries defined, whereas in current function call %i is specified!", m_nOutputEntries, outputLength);
         mp_modelicaUtilityHelper->ModelicaError(message.c_str());
     };
-
+    static std::vector<float> result;
     unsigned int nSteps = 0;
     try {
         nSteps = mp_timeStepMngmt->manageNewStep(time, m_firstInvoke, input);
@@ -519,44 +534,143 @@ void OnnxNeuralNet::runInferenceFlatTensor(double time, double* input, unsigned 
     {
         double* inpInput = mp_timeStepMngmt->handleInpts(time, i, input, m_firstInvoke);
 
-        // we write the data directly into the data array of the tensor - the casting function is set to the correct
-        // type
+        // we write the data directly into the data array of the tensor
         std::vector<float> input_data(m_nInputEntries);
         for (unsigned int j = 0; j < m_nInputEntries; ++j) {
             input_data[j] = static_cast<float>(inpInput[j]);
         }
-//        auto input_shape = mp_session->GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
-//        if (input_shape[0]==-1){
-//            input_shape[0] = 1;
+//        for (int k = 0; k < 4; k++) {
+//            std::cout << "Test: 6 " << k << std::endl;
+//            print_tensor_data(*mp_timeStepMngmt->mp_OnnxStateInpTensors[k]);
+//            std::cout << "Test: 7 " << k << std::endl;
 //        }
 
-        // Erstelle einen Tensor aus den Daten
+        std::vector<Ort::Value> input_tensors;
+        // Feature input
         Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu( OrtDeviceAllocator, OrtMemTypeDefault);
-        std::vector<int64_t> dims = {1, static_cast<int64_t>(input_data.size())};
-        Ort::Value tensor = Ort::Value::CreateTensor<float>(memInfo, input_data.data(), input_data.size(), m_input_shapes.data(), m_input_shapes.size());
+//        std::vector<int64_t> dims = {1, static_cast<int64_t>(input_data.size())};
+//        Ort::Value tensor = Ort::Value::CreateTensor<float>(memInfo, input_data.data(), input_data.size(), m_input_shapes.data(), m_input_shapes.size());
+        input_tensors.emplace_back(Ort::Value::CreateTensor<float>(memInfo, input_data.data(), input_data.size(), m_input_shapes.data(), m_input_shapes.size()));
+
+        // Adittional state inputs
+        std::vector<std::vector<float>> stateInputs(mp_timeStepMngmt->mp_OnnxStateInpTensors.size());
+        int count = 0;
+        for (auto element : mp_timeStepMngmt->mp_OnnxStateInpTensors) {
+            stateInputs[count] = std::vector<float> (element->GetTensorTypeAndShapeInfo().GetElementCount(), 1.0f);
+            auto stateShape = element->GetTensorTypeAndShapeInfo().GetShape();
+            input_tensors.emplace_back(Ort::Value::CreateTensor<float>(memInfo, stateInputs[count].data(), stateInputs[count].size(), stateShape.data(), stateShape.size()));
+//            print_tensor_data(input_tensors[count+1]);
+            auto test_num = input_tensors[count+1].GetTensorTypeAndShapeInfo().GetElementCount();
+            auto size = input_tensors[count+1].GetTensorTypeAndShapeInfo().GetElementCount() * sizeof(input_tensors[count+1].GetTensorTypeAndShapeInfo().GetElementType());
+            std::memcpy(input_tensors[count+1].GetTensorMutableRawData(), mp_timeStepMngmt->mp_OnnxStateInpTensors[count]->GetTensorMutableRawData(), size);
+            //input_tensors[count+1].GetTensorMutableRawData() = mp_timeStepMngmt->mp_OnnxStateInpTensors[count]->GetTensorMutableRawData();
+//            print_tensor_data(input_tensors[count+1]);
+            count = count +1;
+        }
+        auto input_check = values_to_float(input_tensors);
+//        std::cout << "\nInput:" << std::endl;
+//        print_tensor_data(input_tensors[0]);
+//        print_tensor_data(input_tensors[1]);
+//        print_tensor_data(input_tensors[2]);
+//        print_tensor_data(input_tensors[3]);
+//        print_tensor_data(input_tensors[4]);
 
         // Run inference
         try {
-            auto output_tensors = mp_session->Run(Ort::RunOptions{nullptr}, input_names_char.data(), &tensor,
+            output_tensors = mp_session->Run(Ort::RunOptions{nullptr}, input_names_char.data(), input_tensors.data(),
                                               input_names_char.size(), output_names_char.data(), output_names_char.size());
 
-//            if (output_tensors.size() == mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[0] && output_tensors[0].IsTensor()) {
-//                std::string message = Utils::string_format("Inference output dimension is %i and expected is size %i \n", mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[0]);
-//                mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+            if (output_tensors.size() == mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[0] && output_tensors[0].IsTensor()) {
+                std::string message = Utils::string_format("Inference output dimension is %i and expected is size %i \n", mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[0]);
+                mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+            }
+            result = values_to_float(output_tensors);
+
+            if (m_firstInvoke) {
+//                Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu( OrtDeviceAllocator, OrtMemTypeDefault);
+//                std::vector<std::vector<float>> tensorData;
+//                for (int i = 1; i < mp_session->GetOutputCount(); ++i) {
+//                    try {
+//                        std::vector<int64_t> Output_shape;
+//                        Output_shape = mp_session->GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
+//                        Output_shape[0] = (Output_shape[0] == -1) ? 1 : Output_shape[0];
+//
+//                        size_t totalSize = 1;
+//                        for (int64_t dim: Output_shape) {
+//                            totalSize *= dim;
+//                        }
+//                        std::vector<float> tensorDummies(totalSize, 0.0f);
+//                        tensorData.push_back(tensorDummies);
+//                        Ort::Value *tensor = new Ort::Value(
+//                                Ort::Value::CreateTensor<float>(memInfo, tensorData[i - 1].data(),
+//                                                                tensorData[i - 1].size(), Output_shape.data(),
+//                                                                Output_shape.size()));
+//                        //static auto tensor = Ort::Value::CreateTensor<float>(memInfo, tensorData[i-1].data(), tensorData[i-1].size(), input_shape.data(), input_shape.size());
+//                        mp_timeStepMngmt->addStateOut(tensor);
+//                    }
+//                    catch (const std::invalid_argument &e) {
+//                        mp_modelicaUtilityHelper->ModelicaError(e.what());
+//                    }
+//                }
+
+                for (int i = 1; i < mp_session->GetOutputCount(); ++i) {
+                    try {
+                        mp_timeStepMngmt->addStateOut(&output_tensors[i]);
+                    }
+                    catch (const std::invalid_argument &e) {
+                        mp_modelicaUtilityHelper->ModelicaError(e.what());
+                    }
+                }
+            }
+            else{
+                mp_timeStepMngmt->mp_OnnxStateOutTensors.clear();
+                for (int i = 1; i < mp_session->GetOutputCount(); ++i) {
+                    mp_timeStepMngmt->updateStateOut(&output_tensors[i]);
+                }
+            }
+
+
+
+//            for (int i = 1; i < mp_session->GetOutputCount(); ++i) {
+//                std::memcpy(mp_timeStepMngmt->mp_OnnxStateOutTensors[i-1]->GetTensorMutableRawData(),
+//                            output_tensors[i].GetTensorMutableRawData(), output_tensors[i].GetTensorTypeAndShapeInfo().GetElementCount()*
+//                                                                         sizeof(output_tensors[i].GetTensorTypeAndShapeInfo().GetElementType()));
 //            }
-//            std::cout << "Value is: " << output_tensors[0] << std::endl;
+//            for (int k = 0; k < 4; k++) {
+//            std::cout << "Test: 6 " << k << std::endl;
+//            print_tensor_data(*mp_timeStepMngmt->mp_OnnxStateOutTensors[k]);
+//            std::cout << "Test: 7 " << k << std::endl;
+//            }
 
-            auto result = values_to_float(output_tensors);
-            *output = static_cast<double>(result[0]);
-//            std::cout << "Float Value is: " << static_cast<double>(result[0]) << std::endl;
+//            std::vector<std::vector<float>> input_tensor_values(4);
+//            for (int j = 0; j < 4; ++j) {
+//                float *tensorData = mp_timeStepMngmt->mp_OnnxStateOutTensors[j]->GetTensorMutableData<float>();
+//                input_tensor_values[j] = std::vector<float>(tensorData, tensorData +
+//                                                                                        output_tensors[j+1].GetTensorTypeAndShapeInfo().GetElementCount());
+//            }
 
-
+//            std::cout << "\nOutput:" << std::endl;
+//            print_tensor_data(*mp_timeStepMngmt->mp_OnnxStateOutTensors[0]);
+//            print_tensor_data(output_tensors[0]);
+//            print_tensor_data(output_tensors[1]);
+//            print_tensor_data(output_tensors[2]);
+//            print_tensor_data(output_tensors[3]);
+//            print_tensor_data(output_tensors[4]);
         } catch (const Ort::Exception& exception) {
             std::string message = "ERROR running model inference: " + std::string(exception.what()) + "\n";
             mp_modelicaUtilityHelper->ModelicaError(message.c_str());
             exit(-1);
         };
     }
+    if (m_firstInvoke) {
+        m_firstInvoke = false;
+    }
+
+    for (int j = 0; j<m_nOutputEntries; j++){
+        output[j] = static_cast<double>(result[j]);
+    }
+
+    mp_timeStepMngmt->updateFinishedStep(time, nSteps);
 
     return;
 }
@@ -629,21 +743,16 @@ void OnnxNeuralNet::checkOutputTensorSize()
 std::vector<float> OnnxNeuralNet::values_to_float(const std::vector<Ort::Value>& values) {
     std::vector<float> result;
     for (const auto& value : values) {
-        // Überprüfe, ob der Wert ein Tensor ist
         if (value.IsTensor()) {
-            // Zugriff auf die Daten des Tensors
             auto tensor_info = value.GetTensorTypeAndShapeInfo();
             if (tensor_info.GetElementType() == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT) {
-                // Zugriff auf die Daten des Tensors als float
+                // get values as floats
                 auto* tensor_data = value.GetTensorData<float>();
-                // Hänge die Daten des Tensors an das Ergebnisvektor an
                 result.insert(result.end(), tensor_data, tensor_data + tensor_info.GetElementCount());
             } else {
-                // Fehler, wenn der Tensor nicht vom Typ float ist
                 throw std::runtime_error("Tensor Data Type not supported!");
             }
         } else {
-            // Fehler, wenn der Wert kein Tensor ist
             throw std::runtime_error("Value is not a Tensor!");
         }
     }

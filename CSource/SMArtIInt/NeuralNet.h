@@ -30,9 +30,6 @@ protected:
 
 	InputManagement* mp_timeStepMngmt; // time step manager used for stateful RNNs
 
-	void (*mfp_castInput)(const double&, void*, unsigned int); // pointer to input casting function
-	void (*mfp_castOutput)(double&, void*, unsigned int); // pointer to output casting function
-
 	// in and output
 	unsigned int m_inputDim = 0; // dimension of input as specified in modelica
 	unsigned int* mp_inputSizes = nullptr; // sizes of input as specified in modelica
@@ -75,6 +72,9 @@ private:
 
     TfLiteTensor* mp_flatInputTensor = nullptr; // pointer to flat input tensors from nn
 
+    void (*mfp_castInput)(const double&, void*, unsigned int); // pointer to input casting function
+    void (*mfp_castOutput)(double&, void*, unsigned int); // pointer to output casting function
+
     // internal function to prepare model - called by constructor
     void setInputCastFunction(TfLiteTensor* mp_flatInputTensor); // function to set the casting function for inputs
     void setOutputCastFunction(const TfLiteTensor* tensor); // function to set the casting function for outputs
@@ -102,6 +102,8 @@ public:
         mp_modelicaUtilityHelper->ModelicaMessage(message.c_str());
     };
     const char* m_modelType = "ONNX";
+
+    std::vector<Ort::Value> output_tensors;
 
 private:
     const char* m_onnxModelPath = ""; // path of the model

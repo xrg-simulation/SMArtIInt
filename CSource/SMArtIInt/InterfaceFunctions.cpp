@@ -4,7 +4,6 @@
 #include <filesystem>
 #include <variant>
 
-
 void* NeuralNet_createObject(void* modelicaUtilityHelper, const char* ModelPath, unsigned int dymInputDim, unsigned int* p_dymInputSizes, unsigned int dymOutputDim, unsigned int* p_dymOutputSizes, bool stateful, double fixStep)
 {
 	ModelicaUtilityHelper* p_modelicaUtilityHelper = (ModelicaUtilityHelper*)modelicaUtilityHelper;

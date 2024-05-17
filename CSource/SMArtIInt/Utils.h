@@ -5,7 +5,7 @@
 #include "tensorflow/lite/c/c_api.h"
 #include <vector>
 #include <memory>
-
+#include "../External/onnx/onnxruntime/include/onnxruntime_cxx_api.h"
 
 namespace Utils
 {
@@ -42,6 +42,10 @@ namespace Utils
 			m_stateDataByteSizes.push_back(TfLiteTensorByteSize(stateInpTensor));
 			m_stateStorage.push_back(operator new(TfLiteTensorByteSize(stateInpTensor)));
 		}
+        void addStateInput(Ort::Value* stateInpTensor) {
+            m_stateDataByteSizes.push_back(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementCount() * sizeof(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementType()));
+            m_stateStorage.push_back(operator new(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementCount() * sizeof(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementType())));
+        }
 
 		void* at(unsigned int i) {
 			return m_stateStorage[i];

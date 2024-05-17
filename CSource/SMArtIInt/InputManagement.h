@@ -4,6 +4,7 @@
 #include "RollingBuffer.h"
 #include <vector>
 #include "Utils.h"
+#include "../External/onnx/onnxruntime/include/onnxruntime_cxx_api.h"
 
 class InputManagement
 {
@@ -28,6 +29,10 @@ private:
 	unsigned int m_nStateValues = 0; // total number of state values
 	std::vector<TfLiteTensor*> mp_stateInpTensors; // vector with pointers to state input tensors
 	std::vector <const TfLiteTensor*> mp_stateOutTensors; // vector with pointers to state output tensors
+public:
+    std::vector<Ort::Value*> mp_OnnxStateInpTensors; // vector with pointers to state input tensors
+    std::vector <Ort::Value*> mp_OnnxStateOutTensors; // vector with pointers to state output tensors
+
 	
 public:
 	InputManagement(bool stateful, double fixInterval, unsigned int nInputEntries);
@@ -36,8 +41,11 @@ public:
 	bool isActive(); //check if is active
 
 	// Allocation function to handle states
-	bool addStateInp(TfLiteTensor* stateInpTensor); // add state input tensor 
+	bool addStateInp(TfLiteTensor* stateInpTensor); // add state input tensor
+    bool addStateInp(Ort::Value*);
 	bool addStateOut(const TfLiteTensor* stateInpTensor); // add state output tensor
+    bool addStateOut(Ort::Value* stateOutTensor);
+    bool updateStateOut(Ort::Value* stateOutTensor);
 
 	// functions handling the stored state values
 	unsigned int manageNewStep(double time, bool firstInvoke, double* input); // updates the buffer and returns the required number of calls of the neural net
