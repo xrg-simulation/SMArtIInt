@@ -13,7 +13,6 @@ void* NeuralNet_createObject(void* modelicaUtilityHelper, const char* ModelPath,
     //ToDo: check fixStep (must it always be >0???)
 
     // check for model format
-//    namespace fs = std::experimental::filesystem;
     namespace fs = std::filesystem;
     fs::path file_path(ModelPath);
     if (fs::exists(file_path)) {
@@ -60,7 +59,6 @@ void NeuralNet_destroyObject(void* externalObject)
     auto p_neuralNet = dynamic_cast<TfLiteNeuralNet*>(neuralNetPtr);
     if(p_neuralNet)
     {
-        p_neuralNet->printType();
         delete p_neuralNet;
     }
     else
@@ -68,7 +66,6 @@ void NeuralNet_destroyObject(void* externalObject)
         auto p_neuralNet = dynamic_cast<OnnxNeuralNet*>(neuralNetPtr);
         if(p_neuralNet)
         {
-            p_neuralNet->printType();
             //delete p_neuralNet;
         }
     }

@@ -8,37 +8,9 @@
 #include <cstdlib>
 #include <sstream>
 #include <algorithm>
+#include <filesystem>
 
-void print_tensor_data(const Ort::Value& value) {
-    // Überprüfe, ob der Wert ein Tensor ist
-    if (value.IsTensor()) {
-        // Zugriff auf die Form des Tensors
-        auto tensor_info = value.GetTensorTypeAndShapeInfo();
-        auto tensor_shape = tensor_info.GetShape();
-
-        // Überprüfe, ob der Tensor vom Typ float ist
-        if (tensor_info.GetElementType() == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT) {
-            // Zugriff auf die Daten des Tensors als float
-            const float* tensor_data = value.GetTensorData<float>();
-
-            // Ausgabe der Daten des Tensors
-            std::cout << "Tensor Data: [";
-            for (size_t i = 0; i < tensor_info.GetElementCount(); ++i) {
-                std::cout << tensor_data[i];
-                if (i < tensor_info.GetElementCount() - 1) std::cout << ", ";
-            }
-            std::cout << "]\n" << std::endl;
-        } else {
-            std::cout << "Tensor Data Type not supported!" << std::endl;
-        }
-    } else {
-        std::cout << "Value is not a Tensor!" << std::endl;
-    }
-}
-
-
-
-NeuralNet::NeuralNet(ModelicaUtilityHelper* p_modelicaUtilityHelper, const char* tfLiteModelPath, unsigned int dymInputDim,
+NeuralNet::NeuralNet(ModelicaUtilityHelper* p_modelicaUtilityHelper, const char* ModelPath, unsigned int dymInputDim,
 	unsigned int* p_dymInputSizes, unsigned int dymOutputDim, unsigned int* p_dymOutputSizes,
 	bool stateful, double fixInterval)
 {
@@ -82,6 +54,14 @@ NeuralNet::NeuralNet(ModelicaUtilityHelper* p_modelicaUtilityHelper, const char*
 		m_nOutputEntries *= p_dymOutputSizes[i];
 		mp_outputSizes[i] = p_dymOutputSizes[i];
 	}
+    // check if model is stateful and batched
+    namespace fs = std::filesystem;
+    fs::path file_path(ModelPath);
+    std::string extension = file_path.extension().string();
+    if (stateful && mp_inputSizes[0] != 1 && extension == ".onnx"){
+        mp_modelicaUtilityHelper->ModelicaError("Stateful RNNs with batched inputs are not supported for onnx at the moment, "
+                                                "but will be available in the future.");
+    }
 
 	// create the time step management object
     if (stateful && fixInterval <= 0) {
@@ -433,18 +413,32 @@ void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
     for (std::size_t i = 0; i < mp_session->GetOutputCount(); i++) {
         m_output_names.emplace_back(mp_session->GetOutputNameAllocated(i, allocator).get());
         m_output_shapes = mp_session->GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
+        std::ostringstream oss;
+        oss << "\t" << m_output_names.at(i) << " : " << print_shape(m_output_shapes) << std::endl;
+        std::string message = oss.str();
+        mp_modelicaUtilityHelper->ModelicaMessage(message.c_str());
     }
     m_output_shapes = mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
     if (mp_session->GetInputCount() != 1 && !mp_timeStepMngmt->isActive()) {
         mp_modelicaUtilityHelper->ModelicaError("SMArtInt can only handle models with single input");
     }
 
+    // adjust first dimension which is batch size if batch size is dynamic
+    m_input_shapes[0] = (m_input_shapes[0] == -1 && mp_inputSizes[0] == 1) ? 1 : m_input_shapes[0];
+    m_output_shapes[0] = (m_output_shapes[0] == -1 && mp_outputSizes[0] == 1) ? 1 : m_output_shapes[0];
+
+    // ToDo Adjusting Batchsize for stateful models: every input and output (state in- and outputs) needed to be adjusted with an batchsize
+    if (m_input_shapes[0] != mp_inputSizes[0]){
+        std::string message = "SMArtInt: Adjust first dimension from " + Utils::string_format("%i", m_input_shapes[0]) + " to batch size " + Utils::string_format("%i\n", mp_inputSizes[0]);
+        mp_modelicaUtilityHelper->ModelicaMessage(message.c_str());
+
+        m_input_shapes[0] = mp_inputSizes[0]; //1
+        m_output_shapes[0] = mp_outputSizes[0];
+    }
+
     // check input and output size
     checkInputTensorSize();
     checkOutputTensorSize();
-    // adjust first dimension which is batch size
-    m_input_shapes[0] = (m_input_shapes[0] == -1) ? 1 : m_input_shapes[0];
-
 
     // check the number of outputs
     if (mp_session->GetOutputCount() != 1) {
@@ -457,8 +451,6 @@ void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
             mp_modelicaUtilityHelper->ModelicaError("SMArtInt can only handle models with single output!");
         }
     }
-    //auto Test = mp_session->GetInputTypeInfo(1);
-
 
     // Handle states as additional inputs
     if (mp_timeStepMngmt->isActive()) {
@@ -478,7 +470,6 @@ void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
                 std::vector<float> tensorDummies(totalSize, 0.0f);
                 tensorData.push_back(tensorDummies);
                 Ort::Value* tensor = new Ort::Value(Ort::Value::CreateTensor<float>(memInfo, tensorData[i-1].data(), tensorData[i-1].size(), input_shape.data(), input_shape.size()));
-                //static auto tensor = Ort::Value::CreateTensor<float>(memInfo, tensorData[i-1].data(), tensorData[i-1].size(), input_shape.data(), input_shape.size());
                 mp_timeStepMngmt->addStateInp(tensor);
 
             }
@@ -489,9 +480,6 @@ void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
         // Initialize states if available
         mp_timeStepMngmt->initialize();
     }
-
-//    m_firstInvoke = false;
-
     return;
 }
 
@@ -539,17 +527,10 @@ void OnnxNeuralNet::runInferenceFlatTensor(double time, double* input, unsigned 
         for (unsigned int j = 0; j < m_nInputEntries; ++j) {
             input_data[j] = static_cast<float>(inpInput[j]);
         }
-//        for (int k = 0; k < 4; k++) {
-//            std::cout << "Test: 6 " << k << std::endl;
-//            print_tensor_data(*mp_timeStepMngmt->mp_OnnxStateInpTensors[k]);
-//            std::cout << "Test: 7 " << k << std::endl;
-//        }
 
         std::vector<Ort::Value> input_tensors;
         // Feature input
         Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu( OrtDeviceAllocator, OrtMemTypeDefault);
-//        std::vector<int64_t> dims = {1, static_cast<int64_t>(input_data.size())};
-//        Ort::Value tensor = Ort::Value::CreateTensor<float>(memInfo, input_data.data(), input_data.size(), m_input_shapes.data(), m_input_shapes.size());
         input_tensors.emplace_back(Ort::Value::CreateTensor<float>(memInfo, input_data.data(), input_data.size(), m_input_shapes.data(), m_input_shapes.size()));
 
         // Adittional state inputs
@@ -559,21 +540,12 @@ void OnnxNeuralNet::runInferenceFlatTensor(double time, double* input, unsigned 
             stateInputs[count] = std::vector<float> (element->GetTensorTypeAndShapeInfo().GetElementCount(), 1.0f);
             auto stateShape = element->GetTensorTypeAndShapeInfo().GetShape();
             input_tensors.emplace_back(Ort::Value::CreateTensor<float>(memInfo, stateInputs[count].data(), stateInputs[count].size(), stateShape.data(), stateShape.size()));
-//            print_tensor_data(input_tensors[count+1]);
             auto test_num = input_tensors[count+1].GetTensorTypeAndShapeInfo().GetElementCount();
             auto size = input_tensors[count+1].GetTensorTypeAndShapeInfo().GetElementCount() * sizeof(input_tensors[count+1].GetTensorTypeAndShapeInfo().GetElementType());
             std::memcpy(input_tensors[count+1].GetTensorMutableRawData(), mp_timeStepMngmt->mp_OnnxStateInpTensors[count]->GetTensorMutableRawData(), size);
-            //input_tensors[count+1].GetTensorMutableRawData() = mp_timeStepMngmt->mp_OnnxStateInpTensors[count]->GetTensorMutableRawData();
-//            print_tensor_data(input_tensors[count+1]);
             count = count +1;
         }
-        auto input_check = values_to_float(input_tensors);
-//        std::cout << "\nInput:" << std::endl;
-//        print_tensor_data(input_tensors[0]);
-//        print_tensor_data(input_tensors[1]);
-//        print_tensor_data(input_tensors[2]);
-//        print_tensor_data(input_tensors[3]);
-//        print_tensor_data(input_tensors[4]);
+        //auto input_check = values_to_float(input_tensors);
 
         // Run inference
         try {
@@ -587,32 +559,6 @@ void OnnxNeuralNet::runInferenceFlatTensor(double time, double* input, unsigned 
             result = values_to_float(output_tensors);
 
             if (m_firstInvoke) {
-//                Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu( OrtDeviceAllocator, OrtMemTypeDefault);
-//                std::vector<std::vector<float>> tensorData;
-//                for (int i = 1; i < mp_session->GetOutputCount(); ++i) {
-//                    try {
-//                        std::vector<int64_t> Output_shape;
-//                        Output_shape = mp_session->GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
-//                        Output_shape[0] = (Output_shape[0] == -1) ? 1 : Output_shape[0];
-//
-//                        size_t totalSize = 1;
-//                        for (int64_t dim: Output_shape) {
-//                            totalSize *= dim;
-//                        }
-//                        std::vector<float> tensorDummies(totalSize, 0.0f);
-//                        tensorData.push_back(tensorDummies);
-//                        Ort::Value *tensor = new Ort::Value(
-//                                Ort::Value::CreateTensor<float>(memInfo, tensorData[i - 1].data(),
-//                                                                tensorData[i - 1].size(), Output_shape.data(),
-//                                                                Output_shape.size()));
-//                        //static auto tensor = Ort::Value::CreateTensor<float>(memInfo, tensorData[i-1].data(), tensorData[i-1].size(), input_shape.data(), input_shape.size());
-//                        mp_timeStepMngmt->addStateOut(tensor);
-//                    }
-//                    catch (const std::invalid_argument &e) {
-//                        mp_modelicaUtilityHelper->ModelicaError(e.what());
-//                    }
-//                }
-
                 for (int i = 1; i < mp_session->GetOutputCount(); ++i) {
                     try {
                         mp_timeStepMngmt->addStateOut(&output_tensors[i]);
@@ -621,6 +567,7 @@ void OnnxNeuralNet::runInferenceFlatTensor(double time, double* input, unsigned 
                         mp_modelicaUtilityHelper->ModelicaError(e.what());
                     }
                 }
+                m_firstInvoke = false;
             }
             else{
                 mp_timeStepMngmt->mp_OnnxStateOutTensors.clear();
@@ -629,41 +576,11 @@ void OnnxNeuralNet::runInferenceFlatTensor(double time, double* input, unsigned 
                 }
             }
 
-
-
-//            for (int i = 1; i < mp_session->GetOutputCount(); ++i) {
-//                std::memcpy(mp_timeStepMngmt->mp_OnnxStateOutTensors[i-1]->GetTensorMutableRawData(),
-//                            output_tensors[i].GetTensorMutableRawData(), output_tensors[i].GetTensorTypeAndShapeInfo().GetElementCount()*
-//                                                                         sizeof(output_tensors[i].GetTensorTypeAndShapeInfo().GetElementType()));
-//            }
-//            for (int k = 0; k < 4; k++) {
-//            std::cout << "Test: 6 " << k << std::endl;
-//            print_tensor_data(*mp_timeStepMngmt->mp_OnnxStateOutTensors[k]);
-//            std::cout << "Test: 7 " << k << std::endl;
-//            }
-
-//            std::vector<std::vector<float>> input_tensor_values(4);
-//            for (int j = 0; j < 4; ++j) {
-//                float *tensorData = mp_timeStepMngmt->mp_OnnxStateOutTensors[j]->GetTensorMutableData<float>();
-//                input_tensor_values[j] = std::vector<float>(tensorData, tensorData +
-//                                                                                        output_tensors[j+1].GetTensorTypeAndShapeInfo().GetElementCount());
-//            }
-
-//            std::cout << "\nOutput:" << std::endl;
-//            print_tensor_data(*mp_timeStepMngmt->mp_OnnxStateOutTensors[0]);
-//            print_tensor_data(output_tensors[0]);
-//            print_tensor_data(output_tensors[1]);
-//            print_tensor_data(output_tensors[2]);
-//            print_tensor_data(output_tensors[3]);
-//            print_tensor_data(output_tensors[4]);
         } catch (const Ort::Exception& exception) {
             std::string message = "ERROR running model inference: " + std::string(exception.what()) + "\n";
             mp_modelicaUtilityHelper->ModelicaError(message.c_str());
             exit(-1);
         };
-    }
-    if (m_firstInvoke) {
-        m_firstInvoke = false;
     }
 
     for (int j = 0; j<m_nOutputEntries; j++){
@@ -721,7 +638,10 @@ void OnnxNeuralNet::checkOutputTensorSize()
         mp_modelicaUtilityHelper->ModelicaError(message.c_str());
     }
     for (unsigned int i = 0; i < m_outputDim; ++i) {
-        if (abs(mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[i]) != int(mp_outputSizes[i]))
+        if (i == 0 && mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[i] == -1){
+            ;
+        }
+        else if (abs(mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[i]) != int(mp_outputSizes[i]))
         {
             std::string message = "SMArtInt: Wrong output sizes. The loaded model has the sizes {";
             for (unsigned int j = 0; j < m_outputDim; ++j) {
@@ -757,4 +677,31 @@ std::vector<float> OnnxNeuralNet::values_to_float(const std::vector<Ort::Value>&
         }
     }
     return result;
+}
+
+void OnnxNeuralNet::print_tensor_data(const Ort::Value& value) {
+    // check if value is tensor
+    if (value.IsTensor()) {
+        // access the tensor shape
+        auto tensor_info = value.GetTensorTypeAndShapeInfo();
+        auto tensor_shape = tensor_info.GetShape();
+
+        // check if type of tensor is float
+        if (tensor_info.GetElementType() == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT) {
+            // access data
+            const float* tensor_data = value.GetTensorData<float>();
+
+            // print data
+            std::cout << "Tensor Data: [";
+            for (size_t i = 0; i < tensor_info.GetElementCount(); ++i) {
+                std::cout << tensor_data[i];
+                if (i < tensor_info.GetElementCount() - 1) std::cout << ", ";
+            }
+            std::cout << "]\n" << std::endl;
+        } else {
+            std::cout << "Tensor Data Type not supported!" << std::endl;
+        }
+    } else {
+        std::cout << "Value is not a Tensor!" << std::endl;
+    }
 }

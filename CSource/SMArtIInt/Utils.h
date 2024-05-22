@@ -21,6 +21,7 @@ namespace Utils
 	};
 
 	int compareTensorSizes(const TfLiteTensor* A, const TfLiteTensor* B, unsigned int* unmatchedVals);
+    int compareTensorSizes(Ort::Value* A, Ort::Value* B, unsigned int* unmatchedVals);
 
 	int getNumElementsTensor(const TfLiteTensor* A);
 

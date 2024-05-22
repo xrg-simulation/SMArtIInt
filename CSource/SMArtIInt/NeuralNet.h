@@ -122,6 +122,8 @@ private:
     void checkInputTensorSize(); // check if the tensor sizes defined in modelica are equal to those in the model
     void checkOutputTensorSize(); // check if the tensor sizes defined in modelica are equal to those in the model
 
+    void print_tensor_data(const Ort::Value& value); // print tensor data in the console (only for debugging)
+
     static std::vector<float> values_to_float(const std::vector<Ort::Value>& values);
 
     static std::string print_shape(const std::vector<std::int64_t>& v);

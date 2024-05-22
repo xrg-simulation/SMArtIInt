@@ -6,33 +6,6 @@
 #include <stdexcept>
 #include <cstring>
 
-void print_tensor_data1(const Ort::Value& value) {
-    // Überprüfe, ob der Wert ein Tensor ist
-    if (value.IsTensor()) {
-        // Zugriff auf die Form des Tensors
-        auto tensor_info = value.GetTensorTypeAndShapeInfo();
-        auto tensor_shape = tensor_info.GetShape();
-
-        // Überprüfe, ob der Tensor vom Typ float ist
-        if (tensor_info.GetElementType() == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT) {
-            // Zugriff auf die Daten des Tensors als float
-            const float* tensor_data = value.GetTensorData<float>();
-
-            // Ausgabe der Daten des Tensors
-            std::cout << "Tensor Data: [";
-            for (size_t i = 0; i < tensor_info.GetElementCount(); ++i) {
-                std::cout << tensor_data[i];
-                if (i < tensor_info.GetElementCount() - 1) std::cout << ", ";
-            }
-            std::cout << "]\n" << std::endl;
-        } else {
-            std::cout << "Tensor Data Type not supported!" << std::endl;
-        }
-    } else {
-        std::cout << "Value is not a Tensor!" << std::endl;
-    }
-}
-
 InputManagement::InputManagement(bool stateful, double fixInterval, unsigned int nInputEntries)
 {
 	m_active = stateful;
@@ -53,7 +26,6 @@ InputManagement::InputManagement(bool stateful, double fixInterval, unsigned int
 	m_nStateValues = 0;
 
 	return;
-
 }
 
 InputManagement::~InputManagement()
@@ -122,19 +94,19 @@ bool InputManagement::addStateOut(Ort::Value* stateOutTensor)
     size_t i = mp_stateOutTensors.size();
     if (i < m_nStateArr) {
         mp_OnnxStateOutTensors.push_back(stateOutTensor);
-//        unsigned int unmatchedVals[2];
-//        int ret = Utils::compareTensorSizes(mp_stateInpTensors[i], mp_stateOutTensors[i], unmatchedVals);
-//        if (ret < 0) {
-//            throw std::invalid_argument(Utils::string_format("Unmatched number of dimension for state input and output # %i"
-//                                                             " (Input has %i dimensions whereas output has %i dimensions)!", i, unmatchedVals[0], unmatchedVals[1]));
-//            return false;
-//        }
-//        else if (ret > 0) {
-//            throw std::invalid_argument(Utils::string_format("Unmatched number of sizes for state input and output # %i in dimension %i "
-//                                                             "(Input has %i entries whereas output has %i entries)!"
-//                    , i, ret, unmatchedVals[0], unmatchedVals[1]));
-//            return false;
-//        }
+        unsigned int unmatchedVals[2];
+        int ret = Utils::compareTensorSizes(mp_OnnxStateInpTensors[i], mp_OnnxStateOutTensors[i], unmatchedVals);
+        if (ret < 0) {
+            throw std::invalid_argument(Utils::string_format("Unmatched number of dimension for state input and output # %i"
+                                                             " (Input has %i dimensions whereas output has %i dimensions)!", i, unmatchedVals[0], unmatchedVals[1]));
+            return false;
+        }
+        else if (ret > 0) {
+            throw std::invalid_argument(Utils::string_format("Unmatched number of sizes for state input and output # %i in dimension %i "
+                                                             "(Input has %i entries whereas output has %i entries)!"
+                    , i, ret, unmatchedVals[0], unmatchedVals[1]));
+            return false;
+        }
     }
     else {
         // Error
@@ -183,9 +155,6 @@ double* InputManagement::handleInpts(double time, unsigned int iStep, double* fl
                 }
                 else if (size(mp_OnnxStateInpTensors) > 0){
                     std::memcpy(mp_OnnxStateInpTensors[i]->GetTensorMutableRawData(), stateInputs->at(i), stateInputs->byteSizeAt(i));
-//                    std::cout << "Test 4 how often " << i << std::endl;
-//                    print_tensor_data1(*mp_OnnxStateInpTensors[i]);
-//                    std::cout << "Test 5 how often " << i << std::endl;
                 }
             }
 		}
@@ -197,15 +166,8 @@ double* InputManagement::handleInpts(double time, unsigned int iStep, double* fl
                                 TfLiteTensorByteSize(mp_stateOutTensors[i]));
                 }
                 else if (size(mp_OnnxStateInpTensors) > 0) {
-                    std::cout << "\nTest Input pre:" << std::endl;
-                    print_tensor_data1(*mp_OnnxStateInpTensors[i]);
-                    print_tensor_data1(*mp_OnnxStateOutTensors[i]);
                     std::memcpy(mp_OnnxStateInpTensors[i]->GetTensorMutableRawData(), mp_OnnxStateOutTensors[i]->GetTensorMutableRawData(),
                                 sizeof(mp_OnnxStateOutTensors[i]->GetTensorTypeAndShapeInfo().GetElementType()) * mp_OnnxStateOutTensors[i]->GetTensorTypeAndShapeInfo().GetElementCount());
-                    std::cout << "\nTest Input post:" << std::endl;
-                    print_tensor_data1(*mp_OnnxStateInpTensors[i]);
-                    print_tensor_data1(*mp_OnnxStateOutTensors[i]);
-                    std::cout << "\nTest Finished\n" << std::endl;
                 }
 			}
 		}
@@ -279,25 +241,6 @@ bool InputManagement::updateFinishedStep(double time, unsigned int nSteps)
                 auto test = mp_OnnxStateOutTensors[i]->GetTensorTypeAndShapeInfo();
                 std::memcpy(m_stateBuffer.getCurrentValue()->at(i), mp_OnnxStateOutTensors[i]->GetTensorMutableRawData(),
                             m_stateBuffer.getCurrentValue()->byteSizeAt(i));
-//                std::cout << "Test 2 how often " << i << std::endl;
-//
-//                auto test1 = m_stateBuffer.getCurrentValue()->at(i);
-//                int x = 1;
-//                Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU);
-//                size_t numElements = 40;
-//                std::vector<float> data(numElements); // Erstelle einen Vektor für float-Daten
-//                // Fülle den Vektor mit den gewünschten Werten
-//                for (size_t i = 0; i < numElements; ++i) {
-//                    data[i] = i * 1.5f; // Beispielwerte, du kannst sie nach Bedarf ändern
-//                }
-//                auto type = mp_OnnxStateOutTensors[0]->GetTensorTypeAndShapeInfo().GetShape();
-//                Ort::Value value = Ort::Value::CreateTensor<float>(memoryInfo, data.data(), data.size(), type.data(), type.size());
-//                std::memcpy(value.GetTensorMutableRawData(), m_stateBuffer.getCurrentValue()->at(i),
-//                            m_stateBuffer.getCurrentValue()->byteSizeAt(i));
-//                print_tensor_data1(value);
-//                std::cout << "Test 3 how often " << i << std::endl;
-
-
             }
 		}
 	}
