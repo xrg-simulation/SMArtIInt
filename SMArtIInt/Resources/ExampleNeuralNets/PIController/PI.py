@@ -27,7 +27,7 @@ def generateAiPi(rnnType: RnnType, window_size=1, k=30, T=1600, tau=100):
                                       use_bias=False,
                                       stateful=stateful,
                                       return_state=True,
-                                      name="PassAndIntegrate",
+                                      name="ZPassAndIntegrate",
                                       )
     state_input = tf.keras.Input(shape=(2,))
     if rnnType == RnnType.EXTSTATE:
@@ -71,12 +71,12 @@ def step(height=1.0, duration=3600, start=500, tau=100, window_size=500):
 k = 30  # proportional gain
 T = 1600  # integrator time constant
 window_size = 250  # number of past elements used for non-state variant
-rnn_type = RnnType.RNN  # define type of used RNN
+rnn_type = RnnType.EXTSTATE  # define type of used RNN
 if rnn_type == RnnType.RNN:
     tau = 100  # sampling rate
 else:
     tau = 10
-testTFLiteModel = True
+testTFLiteModel = False
 ### Test data
 test_model = False
 stepTime = 100
@@ -166,3 +166,13 @@ if rnn_type != RnnType.STATE:
         plt.show()
 else:
     print("Stateful model cannot be exported as TFLite model!")
+
+### --------- Export To ONNX ------------------------------
+model.summary()
+model.save("savedmodel")
+model.save("savedmodel.h5")
+if rnn_type == RnnType.EXTSTATE:
+    os.system("python -m tf2onnx.convert --saved-model savedmodel --output PI_stateful.onnx --opset 13")
+              #"--inputs FeatureInput:0,input_1:0 --outputs Weight:0,PassAndIntegrate:0")
+elif rnn_type == RnnType.RNN:
+    os.system("python -m tf2onnx.convert --saved-model savedmodel --output PI.onnx --opset 13")
