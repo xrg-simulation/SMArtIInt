@@ -103,7 +103,7 @@ public:
     };
     const char* m_modelType = "ONNX";
 
-    std::vector<Ort::Value> output_tensors;
+    std::vector<Ort::Value> output_tensors; // tensors to store the results
 
 private:
     const char* m_onnxModelPath = ""; // path of the model
@@ -124,9 +124,9 @@ private:
 
     void print_tensor_data(const Ort::Value& value); // print tensor data in the console (only for debugging)
 
-    static std::vector<float> values_to_float(const std::vector<Ort::Value>& values);
+    static std::vector<float> values_to_float(const std::vector<Ort::Value>& values); // convert tensor data to float vector
 
-    static std::string print_shape(const std::vector<std::int64_t>& v);
+    static std::string print_shape(const std::vector<std::int64_t>& v); // print in- & output shapes of tensors in dymola
 };
 
 /*
