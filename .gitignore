@@ -9,11 +9,15 @@ SMArtIInt/Resources/Library/win64/*
 !SMArtIInt/Resources/Library/win64/Delay-V1.lib
 !SMArtIInt/Resources/Library/win64/SMArtIInt.dll
 !SMArtIInt/Resources/Library/win64/tensorflowlite_c.dll
+!SMArtIInt/Resources/Library/win64/onnxruntime.dll
 
 SMArtIInt/Resources/ExampleNeuralNets/NNHeatTransfer/ht_log
 SMArtIInt/Resources/ExampleNeuralNets/NNHeatTransfer/large*
 SMArtIInt/Resources/ExampleNeuralNets/NNHeatTransfer/small*
 SMArtIInt/Resources/ExampleNeuralNets/NNHeatTransfer/*.pckl
+SMArtIInt/Resources/ExampleNeuralNets/NNHeatTransfer/savedmodel*
+
+SMArtIInt/Resources/ExampleNeuralNets/PIController/savedmodel*
 
 _dymWork/*
 _deploy/*
