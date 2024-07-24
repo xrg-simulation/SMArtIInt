@@ -404,19 +404,19 @@ void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
     for (std::size_t i = 0; i < mp_session->GetInputCount(); i++) {
         m_input_names.emplace_back(mp_session->GetInputNameAllocated(i, allocator).get());
         m_input_shapes = mp_session->GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
-        std::ostringstream oss;
-        oss << "\t" << m_input_names.at(i) << " : " << print_shape(m_input_shapes) << std::endl;
-        std::string message = oss.str();
-        mp_modelicaUtilityHelper->ModelicaMessage(message.c_str());
+//        std::ostringstream oss;
+//        oss << "\t" << m_input_names.at(i) << " : " << print_shape(m_input_shapes) << std::endl;
+//        std::string message = oss.str();
+//        mp_modelicaUtilityHelper->ModelicaMessage(message.c_str());
     }
     m_input_shapes = mp_session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
     for (std::size_t i = 0; i < mp_session->GetOutputCount(); i++) {
         m_output_names.emplace_back(mp_session->GetOutputNameAllocated(i, allocator).get());
         m_output_shapes = mp_session->GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
-        std::ostringstream oss;
-        oss << "\t" << m_output_names.at(i) << " : " << print_shape(m_output_shapes) << std::endl;
-        std::string message = oss.str();
-        mp_modelicaUtilityHelper->ModelicaMessage(message.c_str());
+//        std::ostringstream oss;
+//        oss << "\t" << m_output_names.at(i) << " : " << print_shape(m_output_shapes) << std::endl;
+//        std::string message = oss.str();
+//        mp_modelicaUtilityHelper->ModelicaMessage(message.c_str());
     }
     m_output_shapes = mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
     if (mp_session->GetInputCount() != 1 && !mp_timeStepMngmt->isActive()) {
