@@ -46,6 +46,11 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	target_link_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}//External")
 	target_link_libraries(${PROJECT_NAME} "libtensorflowlite_c.so")
 	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath=$ORIGIN")
+
+	target_link_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}//External")
+	target_link_libraries(${PROJECT_NAME} "libonnxruntime.so")
+	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath=$ORIGIN")
+
 else ()
 	set(ADDITIONAL_LIBRARY_DEPENDENCIES "tensorflowlite_c")
 	target_link_libraries(${PROJECT_NAME} PUBLIC "${ADDITIONAL_LIBRARY_DEPENDENCIES}")

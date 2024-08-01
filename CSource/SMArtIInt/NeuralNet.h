@@ -103,43 +103,34 @@ public:
     };
     const char* m_modelType = "ONNX";
 
-    std::vector<Ort::Value> output_tensors; // tensors to store the results
-
 private:
     const char* m_onnxModelPath = ""; // path of the model
 
-    Ort::Env* mp_model= nullptr; // pointer to model
+    Ort::Env* mp_model; // pointer to model
     Ort::SessionOptions mp_options; // pointer to model options
     Ort::Session* mp_session; // pointer to interpreter
+    Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu( OrtDeviceAllocator, OrtMemTypeDefault); // onnx memory info
 
     std::vector<std::string> m_input_names; // vector with input names
     std::vector<std::int64_t> m_input_shapes; // vector with input shapes
     std::vector<std::string> m_output_names; // vector with input names
     std::vector<std::int64_t> m_output_shapes; // vector with input shapes
 
+    std::vector<float>* input_data; // data for feature input
+    std::vector<std::vector<float>>* tensorData; // data for state inputs
+    std::vector<Ort::Value> output_tensors; // tensors to store the results
+
+    std::vector<const char*> input_names_char; // input names as char; needed for onnx inference
+    std::vector<const char*> output_names_char; // output names as char; needed for onnx inference
+
     void loadAndInit(const char* onnxModelPath); // internal function to prepare model - called by constructor
 
     void checkInputTensorSize(); // check if the tensor sizes defined in modelica are equal to those in the model
     void checkOutputTensorSize(); // check if the tensor sizes defined in modelica are equal to those in the model
 
-    void print_tensor_data(const Ort::Value& value); // print tensor data in the console (only for debugging)
-
     static std::vector<float> values_to_float(const std::vector<Ort::Value>& values); // convert tensor data to float vector
+
+    static void print_tensor_data(const Ort::Value& value); // print tensor data in the console (only for debugging)
 
     static std::string print_shape(const std::vector<std::int64_t>& v); // print in- & output shapes of tensors in dymola
 };
-
-/*
-static std::wstring charToWString(const char* text)
-{
-	const size_t size = std::strlen(text);
-	std::wstring wstr;
-	if (size > 0) {
-		wstr.resize(size+1);
-		//std::mbstowcs(&wstr[0], text, size);
-		size_t outSize;
-		mbstowcs_s(&outSize, &wstr[0], size+1, text, size);
-	}
-	return wstr.substr(0, wstr.size() - 1);;
-}
-*/

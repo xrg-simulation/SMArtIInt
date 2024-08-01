@@ -52,7 +52,6 @@ bool InputManagement::addStateInp(TfLiteTensor* stateInpTensor)
 bool InputManagement::addStateInp(Ort::Value* stateInpTensor)
 {
     m_nStateArr += 1;
-    std::cout << "State Test" <<std::endl;
     for (unsigned int i = 0; i < m_nStoredSteps; ++i) {
         m_stateBuffer.getElement(i)->addStateInput(stateInpTensor);
     }

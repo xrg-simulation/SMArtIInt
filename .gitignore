@@ -24,3 +24,4 @@ _deploy/*
 _cmake/*
 cmake_debug_vs
 cmake_debug
+cmake_debug_wsl
