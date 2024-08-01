@@ -6,6 +6,6 @@ function runInferenceFlatTensor
   input Integer n_out;
   output Real[n_out] flatOutputTensor;
   external"C" NeuralNet_runInferenceFlatTensor(smartiint, currentTime, flatInputTensor, size(flatInputTensor, 1), flatOutputTensor, n_out) annotation (
-    Library={"SMArtIInt", "onnxruntime"},
+    Library={"SMArtIInt"},
     LibraryDirectory="modelica://SMArtIInt/Resources/Library");
 end runInferenceFlatTensor;
