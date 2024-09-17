@@ -76,9 +76,9 @@ NeuralNet::~NeuralNet()
 	m_nOutputEntries = 0;
 
 	// clean up allocated tflite stuff
-	if (mp_interpreter) TfLiteInterpreterDelete(mp_interpreter);
-	if (mp_options) TfLiteInterpreterOptionsDelete(mp_options);
-	if (mp_model) TfLiteModelDelete(mp_model);
+	if (mp_interpreter) mp_tfdll->interpreterDelete(mp_interpreter);
+	if (mp_options) mp_tfdll->interpreterOptionsDelete(mp_options);
+	if (mp_model)  mp_tfdll->modelDelete(mp_model);
 
 	// clean up time step manager
 	if (mp_timeStepMngmt) delete mp_timeStepMngmt;
@@ -89,29 +89,29 @@ void NeuralNet::loadAndInit(const char* tfliteModelPath)
 	m_tfliteModelPath = tfliteModelPath;
 
 	//mp_model = TfLiteModelCreateFromFile(m_tfliteModelPath);
-	mp_model = TfLiteModelCreateFromFile(m_tfliteModelPath);
+	mp_model = mp_tfdll->createModelFromFile(m_tfliteModelPath);
 	// zero pointer is returned if not found
 	if (!mp_model) {
 		std::string message = Utils::string_format("SMArtInt: Model not found - check path: %s", m_tfliteModelPath);
 		mp_modelicaUtilityHelper->ModelicaError(message.c_str());
 	};
-	mp_options = TfLiteInterpreterOptionsCreate();
-	TfLiteInterpreterOptionsSetNumThreads(mp_options, 1);
+	mp_options = mp_tfdll->interpreterOptionsCreate();
+    mp_tfdll->interpreterOptionsSetNumThreads(mp_options, 1);
 
 	// Create the interpreter.
-	mp_interpreter = TfLiteInterpreterCreate(mp_model, mp_options);
+	mp_interpreter = mp_tfdll->interpreterCreate(mp_model, mp_options);
 	if (!mp_interpreter) {
 		mp_modelicaUtilityHelper->ModelicaError("Failed to create interpreter");
 	}
 
 	// Allocate tensor buffers.
-	if (TfLiteInterpreterAllocateTensors(mp_interpreter) != kTfLiteOk)
+	if (mp_tfdll->interpreterAllocateTensors(mp_interpreter) != kTfLiteOk)
 		mp_modelicaUtilityHelper->ModelicaError("Failed to allocate tensors!");
 	// Find input tensors.
-	if (TfLiteInterpreterGetInputTensorCount(mp_interpreter) != 1 && !mp_timeStepMngmt->isActive())
+	if (mp_tfdll->interpreterGetInputTensorCount(mp_interpreter) != 1 && !mp_timeStepMngmt->isActive())
 		mp_modelicaUtilityHelper->ModelicaError("SMArtInt can only handle models with single input");
 
-	mp_flatInputTensor = TfLiteInterpreterGetInputTensor(mp_interpreter, 0);
+	mp_flatInputTensor = mp_tfdll->interpreterGetInputTensor(mp_interpreter, 0);
 
 	// set the casting function to correct types
 	setInputCastFunction(mp_flatInputTensor);
@@ -132,18 +132,19 @@ void NeuralNet::loadAndInit(const char* tfliteModelPath)
 		for (unsigned int i = 0; i < m_inputDim; ++i) {
 			p_dymInputSizes[i] = int(mp_inputSizes[i]);
 		}
-		TfLiteInterpreterResizeInputTensor(mp_interpreter, 0, p_dymInputSizes, m_inputDim);
+        mp_tfdll->interpreterResizeInputTensor(mp_interpreter, 0, p_dymInputSizes,
+                                               m_inputDim);
 
 		// Reallocate tensor buffers for updated sizes
-		if (TfLiteInterpreterAllocateTensors(mp_interpreter) != kTfLiteOk) {
+		if (mp_tfdll->interpreterAllocateTensors(mp_interpreter) != kTfLiteOk) {
 			mp_modelicaUtilityHelper->ModelicaError("Failed to allocate tensors!");
 		}
 	}
 
 	// check the number of outputs
-	if (TfLiteInterpreterGetOutputTensorCount(mp_interpreter) != 1) {
+	if (mp_tfdll->interpreterGetOutputTensorCount(mp_interpreter) != 1) {
 		if (mp_timeStepMngmt->isActive()) {
-			if (TfLiteInterpreterGetOutputTensorCount(mp_interpreter) != TfLiteInterpreterGetInputTensorCount(mp_interpreter)) {
+			if (mp_tfdll->interpreterGetOutputTensorCount(mp_interpreter) != TfLiteInterpreterGetInputTensorCount(mp_interpreter)) {
 				mp_modelicaUtilityHelper->ModelicaError("SMArtInt: Stateful handling can only be done if model has the same number of inputs (=) and outputs");
 			}
 		}
@@ -156,9 +157,9 @@ void NeuralNet::loadAndInit(const char* tfliteModelPath)
 	if (mp_timeStepMngmt->isActive()) {
 		mp_modelicaUtilityHelper->ModelicaMessage("Handling additional inputs as states");
 		//mp_timeStepMngmt->setNumberOfStates(TfLiteInterpreterGetInputTensorCount(mp_interpreter) - 1);
-		for (int i = 1; i < TfLiteInterpreterGetInputTensorCount(mp_interpreter); ++i) {
+		for (int i = 1; i < mp_tfdll->interpreterGetInputTensorCount(mp_interpreter); ++i) {
 			try {
-				mp_timeStepMngmt->addStateInp(TfLiteInterpreterGetInputTensor(mp_interpreter, i));
+				mp_timeStepMngmt->addStateInp(mp_tfdll->interpreterGetInputTensor(mp_interpreter, i));
 			}
 			catch (const std::invalid_argument& e) {
 				mp_modelicaUtilityHelper->ModelicaError(e.what());
@@ -213,7 +214,7 @@ void NeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int 
 		};
 	}
 
-	const TfLiteTensor* p_flatOutputTensor = TfLiteInterpreterGetOutputTensor(mp_interpreter, 0);
+	const TfLiteTensor* p_flatOutputTensor = mp_tfdll->interpreterGetOutputTensor(mp_interpreter, 0);
 
 	if (m_firstInvoke) {
 		// check sizes
@@ -223,9 +224,9 @@ void NeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int 
 		setOutputCastFunction(p_flatOutputTensor);
 
 		// handle additional outputs for states
-		for (int i = 1; i < TfLiteInterpreterGetOutputTensorCount(mp_interpreter); ++i) {
+		for (int i = 1; i < mp_tfdll->interpreterGetOutputTensorCount(mp_interpreter); ++i) {
 			try {
-				mp_timeStepMngmt->addStateOut(TfLiteInterpreterGetOutputTensor(mp_interpreter, i));
+				mp_timeStepMngmt->addStateOut(mp_tfdll->interpreterGetOutputTensor(mp_interpreter, i));
 			}
 			catch (const std::invalid_argument& e) {
 				mp_modelicaUtilityHelper->ModelicaError(e.what());
@@ -296,7 +297,7 @@ void NeuralNet::checkOutputTensorSize(const TfLiteTensor* p_flatOutputTensor)
 		{
 			std::string message = "SMArtInt: Wrong output sizes. The loaded model has the sizes {";
 			for (unsigned int j = 0; j < m_outputDim; ++j) {
-				message += Utils::string_format("%i", TfLiteTensorDim(p_flatOutputTensor, j));
+				message += Utils::string_format("%i", mp_tfdll->tensorDim(p_flatOutputTensor, j));
 				if (j < (m_outputDim - 1)) message += ", ";
 			}
 			message += "}, whereas in the interface the sizes {";

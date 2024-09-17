@@ -3,7 +3,7 @@ template<class T, class idT>
 class RollingBuffer
 {
 public:
-	RollingBuffer(unsigned int bufferSize);
+	explicit RollingBuffer(unsigned int bufferSize);
 	~RollingBuffer();
 
 	T* getCurrentValue(); // get the current value in buffer

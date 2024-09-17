@@ -8,6 +8,7 @@
 #include "tensorflow/lite/c/c_api.h"
 #include "InputManagement.h"
 #include <cstring>
+#include "TensorflowDllHandler.h"
 
 class NeuralNet
 {
@@ -34,6 +35,8 @@ private:
 	void checkOutputTensorSize(const TfLiteTensor* p_flatOutputTensor); // check if the tensor sizes defined in modelica are equal to those in the model
 
 private:
+
+    TensorflowDllHandler* mp_tfdll;
 
 	ModelicaUtilityHelper* mp_modelicaUtilityHelper; // attribute to access dymola utility functions
 

@@ -94,6 +94,7 @@ bool RollingBuffer<T, idT>::update(const idT& bufferIdx, const int& jumpEstimate
 {
 	bool found = false;
 	if (bufferIdx > mp_bufferIdx[m_currentIdx]) {
+        // the idx is larger than the current index
 		incrementIndices();
 		mp_bufferIdx[m_currentIdx] = bufferIdx;
 		found = true;
@@ -106,8 +107,7 @@ bool RollingBuffer<T, idT>::update(const idT& bufferIdx, const int& jumpEstimate
 		decrementCurrent(jumpEstimate);
 		if (mp_bufferIdx[m_currentIdx] == bufferIdx) {
 			found = true;
-		}
-		else if (mp_bufferIdx[m_currentIdx] < bufferIdx) {
+		} else if (bufferIdx > mp_bufferIdx[m_currentIdx]) {
 			while (!found) {
 				// at this point we cannot 
 				incrementCurrent(1);
@@ -124,12 +124,7 @@ bool RollingBuffer<T, idT>::update(const idT& bufferIdx, const int& jumpEstimate
 				counter += 1;
 				if (mp_bufferIdx[m_currentIdx] == bufferIdx) {
 					found = true;
-				}
-				else if (mp_bufferIdx[m_currentIdx] < bufferIdx) {
-					incrementCurrent(1);
-					found = true;
-				}
-				else {
+				} else {
 					if (counter >= m_bufferSize) {
 						break;
 					}
@@ -144,7 +139,6 @@ bool RollingBuffer<T, idT>::update(const idT& bufferIdx, const int& jumpEstimate
 			m_prevIdx = m_bufferSize + m_prevIdx;
 		}
 		mp_bufferIdx[m_currentIdx] = bufferIdx;
-
 	}
 	return found;
 };

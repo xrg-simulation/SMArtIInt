@@ -26,6 +26,8 @@ source_group("Quelldateien" FILES ${Quelldateien})
 set(ALL_FILES
     ${Headerdateien}
     ${Quelldateien}
+		TensorflowDllHandlerWin.cpp
+		TensorflowDllHandlerWin.h
 )
 
 ################################################################################
