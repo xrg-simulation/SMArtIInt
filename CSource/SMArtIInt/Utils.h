@@ -3,6 +3,7 @@
 //#include <tchar.h>
 #include <iostream>
 #include "tensorflow/lite/c/c_api.h"
+#include "TensorflowDllHandler.h"
 #include <vector>
 #include <memory>
 
@@ -20,9 +21,18 @@ namespace Utils
 		return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
 	};
 
-	int compareTensorSizes(const TfLiteTensor* A, const TfLiteTensor* B, unsigned int* unmatchedVals);
+	int compareTensorSizes(const TfLiteTensor* A, const TfLiteTensor* B, unsigned int* unmatchedVals,
+                           TensorflowDllHandler* p_tfDll);
 
-	int getNumElementsTensor(const TfLiteTensor* A);
+	int getNumElementsTensor(const TfLiteTensor* A,
+                             TensorflowDllHandler* p_tfDll);
+
+    // methods to retreive dlls
+#ifdef _WIN32
+    std::string getTensorflowDllPathWin();
+#else
+    std::string getTensorflowDllPathLinux();
+#endif
 
 	// individual casting functions
 	void castToFloat(const double& value, void* store, unsigned int pos);
@@ -38,9 +48,9 @@ namespace Utils
 			};
 		};
 
-		void addStateInput(TfLiteTensor* stateInpTensor) {
-			m_stateDataByteSizes.push_back(TfLiteTensorByteSize(stateInpTensor));
-			m_stateStorage.push_back(operator new(TfLiteTensorByteSize(stateInpTensor)));
+		void addStateInput(TfLiteTensor* stateInpTensor, TensorflowDllHandler* p_tfDll) {
+			m_stateDataByteSizes.push_back(p_tfDll->tensorByteSize(stateInpTensor));
+			m_stateStorage.push_back(operator new(p_tfDll->tensorByteSize(stateInpTensor)));
 		}
 
 		void* at(unsigned int i) {

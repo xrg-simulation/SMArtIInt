@@ -5,11 +5,10 @@
 #include "TensorflowDllHandlerWin.h"
 
 
-
 TensorflowDllHandlerWin::TensorflowDllHandlerWin(LPCTSTR filename) {
     _module = LoadLibrary(filename);
     _f_createModelFromFile = (PFN_CREATEMODELFROMFILE) GetProcAddress(_module,
-                                                                      "createModelFromFile");
+                                                                      "TfLiteModelCreateFromFile");
 
     _f_interpreterDelete = (PFN_INTERPRETERDELETE) GetProcAddress(_module,
                                                                   "TfLiteInterpreterDelete");
@@ -57,4 +56,11 @@ TensorflowDllHandlerWin::TensorflowDllHandlerWin(LPCTSTR filename) {
 
     _f_tensorDim = (PFN_TENSORDIM) GetProcAddress(_module, "TfLiteTensorDim");
 
+    _f_tensorNumDims = (PFN_TENSORNUMDIMS) GetProcAddress(_module, "TfLiteTensorNumDims");
+
+    _f_tensorType = (PFN_TENSORTYPE ) GetProcAddress(_module, "TfLiteTensorType");
+
+    _f_tensorData = (PFN_TENSORDATA ) GetProcAddress(_module, "TfLiteTensorData");
+
+    _f_tensorByteSize = (PFN_TENSORBYTESIZE) GetProcAddress(_module, "TfLiteTensorByteSize");
 }

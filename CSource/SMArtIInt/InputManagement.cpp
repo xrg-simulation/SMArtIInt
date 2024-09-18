@@ -6,8 +6,12 @@
 #include <stdexcept>
 #include <cstring>
 
-InputManagement::InputManagement(bool stateful, double fixInterval, unsigned int nInputEntries)
+InputManagement::InputManagement(bool stateful, double fixInterval,
+                                 unsigned int nInputEntries, TensorflowDllHandler* p_tfDll)
 {
+
+    mp_tfDll = p_tfDll;
+
 	m_active = stateful;
 	m_fixTimeIntv = fixInterval;
 	m_nInputEntries = nInputEntries;
@@ -43,10 +47,10 @@ bool InputManagement::addStateInp(TfLiteTensor* stateInpTensor)
 {
 	m_nStateArr += 1;
 	for (unsigned int i = 0; i < m_nStoredSteps; ++i) {
-		m_stateBuffer.getElement(i)->addStateInput(stateInpTensor);
+		m_stateBuffer.getElement(i)->addStateInput(stateInpTensor, mp_tfDll);
 	}
 	mp_stateInpTensors.push_back(stateInpTensor);
-	m_nStateValues += Utils::getNumElementsTensor(stateInpTensor);
+	m_nStateValues += Utils::getNumElementsTensor(stateInpTensor, mp_tfDll);
 	return true;
 }
 
@@ -56,7 +60,7 @@ bool InputManagement::addStateOut(const TfLiteTensor* stateOutTensor)
 	if (i < m_nStateArr) {
 		mp_stateOutTensors.push_back(stateOutTensor);
 		unsigned int unmatchedVals[2];
-		int ret = Utils::compareTensorSizes(mp_stateInpTensors[i], mp_stateOutTensors[i], unmatchedVals);
+		int ret = Utils::compareTensorSizes(mp_stateInpTensors[i], mp_stateOutTensors[i], unmatchedVals, mp_tfDll);
 		if (ret < 0) {
 			throw std::invalid_argument(Utils::string_format("Unmatched number of dimension for state input and output # %i"
 				" (Input has %i dimensions whereas output has %i dimensions)!", i, unmatchedVals[0], unmatchedVals[1]));
@@ -104,13 +108,15 @@ double* InputManagement::handleInpts(double time, unsigned int iStep, double* fl
 			// initialize states with results from previously accepted step
 			Utils::stateInputsContainer* stateInputs = m_stateBuffer.getPrevValue();
 			for (unsigned int i = 0; i < m_nStateArr; ++i) {
-				std::memcpy(TfLiteTensorData(mp_stateInpTensors[i]), stateInputs->at(i), stateInputs->byteSizeAt(i));
+				std::memcpy(mp_tfDll->tensorData(mp_stateInpTensors[i]), stateInputs->at(i), stateInputs->byteSizeAt(i));
 			}
 		}
 		else {
 			// copy state output to input
 			for (unsigned int i = 0; i < m_nStateArr; ++i) {
-				std::memcpy(TfLiteTensorData(mp_stateInpTensors[i]), TfLiteTensorData(mp_stateOutTensors[i]), TfLiteTensorByteSize(mp_stateOutTensors[i]));
+				std::memcpy(mp_tfDll->tensorData(mp_stateInpTensors[i]),
+                            mp_tfDll->tensorData(mp_stateOutTensors[i]),
+                            mp_tfDll->tensorByteSize(mp_stateOutTensors[i]));
 			}
 		}
 		input_pointer = mp_flatInterpolatedInp;
@@ -174,7 +180,7 @@ bool InputManagement::updateFinishedStep(double time, unsigned int nSteps)
 	if (nSteps > 0) {
 		for (unsigned int i = 0; i < m_nStateArr; ++i) {
 			// handle the states
-			std::memcpy(m_stateBuffer.getCurrentValue()->at(i), TfLiteTensorData(mp_stateOutTensors[i]), m_stateBuffer.getCurrentValue()->byteSizeAt(i));
+			std::memcpy(m_stateBuffer.getCurrentValue()->at(i), mp_tfDll->tensorData(mp_stateOutTensors[i]), m_stateBuffer.getCurrentValue()->byteSizeAt(i));
 		}
 	}
 	return true;
@@ -188,7 +194,7 @@ void InputManagement::initialize()
 
 		void (*castFunc)(const double&, void*, unsigned int);
 
-		switch (TfLiteTensorType(mp_stateInpTensors[iInput])) {
+		switch (mp_tfDll->tensorType(mp_stateInpTensors[iInput])) {
 			case kTfLiteFloat32:
 				castFunc = &Utils::castToFloat;
 				break;
@@ -199,7 +205,7 @@ void InputManagement::initialize()
 
 		void* p_data = m_stateBuffer.getPrevValue()->at(iInput);
 
-		unsigned int n = Utils::getNumElementsTensor(mp_stateInpTensors[iInput]);
+		unsigned int n = Utils::getNumElementsTensor(mp_stateInpTensors[iInput], mp_tfDll);
 
 		for (unsigned int i = 0; i < n; ++i) {
 			castFunc(0.0, p_data, i);
@@ -221,7 +227,7 @@ void InputManagement::initialize(double* p_stateValues, const unsigned int &nSta
 
 		void (*castFunc)(const double&, void*, unsigned int);
 
-		switch (TfLiteTensorType(mp_stateInpTensors[iInput])) {
+		switch (mp_tfDll->tensorType(mp_stateInpTensors[iInput])) {
 		case kTfLiteFloat32:
 			castFunc = &Utils::castToFloat;
 			break;
@@ -232,7 +238,7 @@ void InputManagement::initialize(double* p_stateValues, const unsigned int &nSta
 
 		void* p_data = m_stateBuffer.getPrevValue()->at(iInput);
 
-		unsigned int n = Utils::getNumElementsTensor(mp_stateInpTensors[iInput]);
+		unsigned int n = Utils::getNumElementsTensor(mp_stateInpTensors[iInput], mp_tfDll);
 
 
 		for (unsigned int i = 0; i < n; ++i) {

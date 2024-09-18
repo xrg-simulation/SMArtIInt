@@ -4,6 +4,7 @@
 #include "RollingBuffer.h"
 #include <vector>
 #include "Utils.h"
+#include "TensorflowDllHandler.h"
 
 class InputManagement
 {
@@ -30,8 +31,10 @@ private:
 	std::vector <const TfLiteTensor*> mp_stateOutTensors; // vector with pointers to state output tensors
 	
 public:
-	InputManagement(bool stateful, double fixInterval, unsigned int nInputEntries);
+	InputManagement(bool stateful, double fixInterval, unsigned int nInputEntries, TensorflowDllHandler* p_tfDll);
 	~InputManagement();
+
+    TensorflowDllHandler* mp_tfDll;
 
 	bool isActive(); //check if is active
 

@@ -7,46 +7,56 @@
 #ifndef SMARTIINT_TENSORFLOWDLLHANDLER_H
 #define SMARTIINT_TENSORFLOWDLLHANDLER_H
 
+#if defined(_MSC_VER)
+#define TF_CDECL __cdecl
+#else
+#define TF_CDECL
+#endif
 
-typedef TfLiteModel* (__cdecl *PFN_CREATEMODELFROMFILE) (const char*);
+typedef TfLiteModel* (TF_CDECL *PFN_CREATEMODELFROMFILE) (const char*);
 
-typedef void (__cdecl *PFN_INTERPRETERDELETE)(TfLiteInterpreter *);
+typedef void (TF_CDECL *PFN_INTERPRETERDELETE)(TfLiteInterpreter *);
 
-typedef void (__cdecl *PFN_INTERPRETEROPTIONSDELETE)(TfLiteInterpreterOptions *);
+typedef void (TF_CDECL *PFN_INTERPRETEROPTIONSDELETE)(TfLiteInterpreterOptions *);
 
-typedef void (__cdecl *PFN_MODELDELETE)(TfLiteModel *);
+typedef void (TF_CDECL *PFN_MODELDELETE)(TfLiteModel *);
 
-typedef TfLiteInterpreter *(__cdecl *PFN_INTERPRETERCREATE)(const TfLiteModel *, const TfLiteInterpreterOptions *);
+typedef TfLiteInterpreter *(TF_CDECL *PFN_INTERPRETERCREATE)(const TfLiteModel *, const TfLiteInterpreterOptions *);
 
-typedef TfLiteStatus (__cdecl *PFN_INTERPRETERALLOCATETENSORS)(TfLiteInterpreter *);
+typedef TfLiteStatus (TF_CDECL *PFN_INTERPRETERALLOCATETENSORS)(TfLiteInterpreter *);
 
-typedef int32_t (__cdecl *PFN_INTERPRETERGETINPUTTENSORCOUNT)(const TfLiteInterpreter *);
+typedef int32_t (TF_CDECL *PFN_INTERPRETERGETINPUTTENSORCOUNT)(const TfLiteInterpreter *);
 
-typedef TfLiteTensor *(__cdecl *PFN_INTERPRETERGETINPUTTENSOR)(const TfLiteInterpreter *, int32_t input_index);
+typedef TfLiteTensor *(TF_CDECL *PFN_INTERPRETERGETINPUTTENSOR)(const TfLiteInterpreter *, int32_t input_index);
 
-typedef const TfLiteTensor *(__cdecl *PFN_INTERPRETERGETOUTPUTTENSOR)(const TfLiteInterpreter *, int32_t output_index);
+typedef const TfLiteTensor *(TF_CDECL *PFN_INTERPRETERGETOUTPUTTENSOR)(const TfLiteInterpreter *, int32_t output_index);
 
-typedef int32_t (__cdecl *PFN_INTERPRETERGETOUTPUTTENSORCOUNT)(const TfLiteInterpreter *);
+typedef int32_t (TF_CDECL *PFN_INTERPRETERGETOUTPUTTENSORCOUNT)(const TfLiteInterpreter *);
 
-typedef TfLiteStatus (__cdecl *PFN_INTERPRETERINVOKE)(TfLiteInterpreter *);
+typedef TfLiteStatus (TF_CDECL *PFN_INTERPRETERINVOKE)(TfLiteInterpreter *);
 
-typedef TfLiteStatus (__cdecl *PFN_INTERPRETERRESIZEINPUTTENSOR)(TfLiteInterpreter *, int32_t input_index, const int *,
+typedef TfLiteStatus (TF_CDECL *PFN_INTERPRETERRESIZEINPUTTENSOR)(TfLiteInterpreter *, int32_t input_index, const int *,
                                                              int32_t dims_size);
 
-typedef TfLiteStatus (__cdecl *PFN_INTERPRETERMODIFYGRAPHWITHDELEGATE)(TfLiteInterpreter *, TfLiteDelegate *);
+typedef TfLiteStatus (TF_CDECL *PFN_INTERPRETERMODIFYGRAPHWITHDELEGATE)(TfLiteInterpreter *, TfLiteDelegate *);
 
-typedef TfLiteInterpreterOptions *(__cdecl *PFN_INTERPRETEROPTIONSCREATE)();
+typedef TfLiteInterpreterOptions *(TF_CDECL *PFN_INTERPRETEROPTIONSCREATE)();
 
-typedef void (__cdecl *PFN_INTERPRETEROPTIONSSETNUMTHREADS)(TfLiteInterpreterOptions *, int32_t num_threads);
+typedef void (TF_CDECL *PFN_INTERPRETEROPTIONSSETNUMTHREADS)(TfLiteInterpreterOptions *, int32_t num_threads);
 
-typedef void (__cdecl *PFN_INTERPRETEROPTIONSADDDELEGATE)(TfLiteInterpreterOptions *, TfLiteDelegate *);
+typedef void (TF_CDECL *PFN_INTERPRETEROPTIONSADDDELEGATE)(TfLiteInterpreterOptions *, TfLiteDelegate *);
 
-typedef int32_t (__cdecl *PFN_TENSORDIM)(const TfLiteTensor*, int32_t);
+typedef int32_t (TF_CDECL *PFN_TENSORDIM)(const TfLiteTensor*, int32_t);
+
+typedef int32_t (TF_CDECL *PFN_TENSORNUMDIMS)(const TfLiteTensor* tensor);
+
+typedef TfLiteType (TF_CDECL *PFN_TENSORTYPE)(const TfLiteTensor* tensor);
+
+typedef void* (TF_CDECL *PFN_TENSORDATA)(const TfLiteTensor*);
+
+typedef size_t (TF_CDECL *PFN_TENSORBYTESIZE)(const TfLiteTensor* tensor);
 
 class TensorflowDllHandler {
-
-protected:
-    virtual ~TensorflowDllHandler() = default;
 
 public:
     virtual TfLiteModel* createModelFromFile(const char* model_path) = 0;
@@ -80,6 +90,16 @@ public:
     virtual void interpreterOptionsSetNumThreads(TfLiteInterpreterOptions *options, int32_t num_threads) = 0;
 
     virtual void interpreterOptionsAddDelegate(TfLiteInterpreterOptions *options, TfLiteDelegate *delegate) = 0;
+
+    virtual int32_t tensorNumDims(const TfLiteTensor* tensor) = 0;
+
+    virtual TfLiteType tensorType(const TfLiteTensor* tensor) = 0;
+
+    virtual void* tensorData(const TfLiteTensor* tensor) = 0;
+
+    virtual size_t tensorByteSize(const TfLiteTensor* tensor) = 0;
+
+    virtual ~TensorflowDllHandler() = default;
 };
 
 

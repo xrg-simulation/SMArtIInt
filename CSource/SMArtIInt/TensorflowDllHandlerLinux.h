@@ -2,17 +2,16 @@
 // Created by RobertFlesch on 16.09.2024.
 //
 
-#ifndef SMARTIINT_TENSORFLOWDLLHANDLERWIN_H
-#define SMARTIINT_TENSORFLOWDLLHANDLERWIN_H
+#ifndef SMARTIINT_TENSORFLOWDLLHANDLERLINUX_H
+#define SMARTIINT_TENSORFLOWDLLHANDLERLINUX_H
 
 #include "TensorflowDllHandler.h"
-#include <windows.h>
+#include <dlfcn.h>
 
-
-class TensorflowDllHandlerWin : public TensorflowDllHandler {
+class TensorflowDllHandlerLinux : public TensorflowDllHandler {
 public:
-    explicit TensorflowDllHandlerWin(LPCTSTR filename);
-    ~TensorflowDllHandlerWin() override { FreeLibrary(_module); }
+    explicit TensorflowDllHandlerLinux(const char* filename);
+    ~TensorflowDllHandlerLinux() override;
 
     TfLiteStatus interpreterAllocateTensors(TfLiteInterpreter *interpreter) override {
         return reinterpret_cast<TfLiteStatus>((*_f_interpreterAllocateTensors)(interpreter));
@@ -34,8 +33,7 @@ public:
         (*_f_modelDelete)(model);
     }
 
-    TfLiteInterpreter *
-    interpreterCreate(const TfLiteModel *model, const TfLiteInterpreterOptions *optional_options) override {
+    TfLiteInterpreter *interpreterCreate(const TfLiteModel *model, const TfLiteInterpreterOptions *optional_options) override {
         return reinterpret_cast<TfLiteInterpreter *>((*_f_interpreterCreate)(model, optional_options));
     }
 
@@ -44,10 +42,10 @@ public:
     }
 
     TfLiteTensor *interpreterGetInputTensor(const TfLiteInterpreter *interpreter, int32_t input_index) override {
-        return reinterpret_cast< TfLiteTensor *>((*_f_interpreterGetInputTensor)(interpreter, input_index));    }
+        return reinterpret_cast<TfLiteTensor *>((*_f_interpreterGetInputTensor)(interpreter, input_index));
+    }
 
-    const TfLiteTensor *
-    interpreterGetOutputTensor(const TfLiteInterpreter *interpreter, int32_t output_index) override {
+    const TfLiteTensor *interpreterGetOutputTensor(const TfLiteInterpreter *interpreter, int32_t output_index) override {
         return reinterpret_cast<const TfLiteTensor *>((*_f_interpreterGetOutputTensor)(interpreter, output_index));
     }
 
@@ -59,8 +57,7 @@ public:
         return (*_f_interpreterInvoke)(interpreter);
     }
 
-    TfLiteStatus interpreterResizeInputTensor(TfLiteInterpreter *interpreter, int32_t input_index, const int *dims,
-                                              int32_t dims_size) override {
+    TfLiteStatus interpreterResizeInputTensor(TfLiteInterpreter *interpreter, int32_t input_index, const int *dims, int32_t dims_size) override {
         return (*_f_interpreterResizeInputTensor)(interpreter, input_index, dims, dims_size);
     }
 
@@ -88,20 +85,20 @@ public:
         return (*_f_tensorNumDims)(tensor);
     }
 
-    TfLiteType tensorType(const TfLiteTensor* tensor)  override {
+    TfLiteType tensorType(const TfLiteTensor* tensor) override {
         return (*_f_tensorType)(tensor);
     }
 
-    void* tensorData(const TfLiteTensor* tensor)  override {
+    void* tensorData(const TfLiteTensor* tensor) override {
         return (*_f_tensorData)(tensor);
     }
 
-    size_t tensorByteSize(const TfLiteTensor* tensor)  override {
+    size_t tensorByteSize(const TfLiteTensor* tensor) override {
         return (*_f_tensorByteSize)(tensor);
     }
 
 private:
-    HMODULE _module;
+    void* _module;
 
     PFN_CREATEMODELFROMFILE _f_createModelFromFile;
     PFN_INTERPRETERDELETE _f_interpreterDelete;
@@ -123,9 +120,9 @@ private:
     PFN_TENSORNUMDIMS _f_tensorNumDims;
     PFN_TENSORTYPE _f_tensorType;
     PFN_TENSORDATA _f_tensorData;
-    PFN_TENSORBYTESIZE  _f_tensorByteSize;
-    
+    PFN_TENSORBYTESIZE _f_tensorByteSize;
+
+    void handleError();
 };
 
-
-#endif //SMARTIINT_TENSORFLOWDLLHANDLERWIN_H
+#endif //SMARTIINT_TENSORFLOWDLLHANDLERLINUX_H
