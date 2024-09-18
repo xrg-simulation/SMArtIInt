@@ -2,9 +2,14 @@
 #include "NeuralNet.h"
 #include "../../SMArtIInt/Resources/Include/ModelicaUtilityHelper.h"
 #include <iostream>
-#include "tensorflow/lite/c/c_api.h"
+//#include "tensorflow/lite/c/c_api.h"
 #include "Utils.h"
 #include <stdexcept>
+#include "TensorflowDllHandlerWin.h"
+
+#include <windows.h>
+#include <vector>
+#include <string>
 
 NeuralNet::NeuralNet(ModelicaUtilityHelper* p_modelicaUtilityHelper, const char* tfLiteModelPath, unsigned int dymInputDim,
 	unsigned int* p_dymInputSizes, unsigned int dymOutputDim, unsigned int* p_dymOutputSizes,
@@ -86,6 +91,25 @@ NeuralNet::~NeuralNet()
 
 void NeuralNet::loadAndInit(const char* tfliteModelPath)
 {
+
+    char buffer[MAX_PATH];
+    DWORD length = GetModuleFileNameA(NULL, buffer, MAX_PATH);
+
+    if (length == 0 || length == MAX_PATH) {
+        std::string message = Utils::string_format("SMArtInt: Unable to locate tensorflow dll");
+        mp_modelicaUtilityHelper->ModelicaError(message.c_str());
+    }
+    std::string folderPath(buffer);
+    size_t lastSlash = folderPath.find_last_of("\\/");
+    if (lastSlash != std::string::npos) {
+        folderPath = folderPath.substr(0, lastSlash + 1);
+    }
+
+    // Build the new path for tensorflow_c.dll
+    std::string tensorflowDllPath = folderPath + "tensorflow_c.dll";
+
+    mp_tfdll = new TensorflowDllHandlerWin(tensorflowDllPath.c_str());
+
 	m_tfliteModelPath = tfliteModelPath;
 
 	//mp_model = TfLiteModelCreateFromFile(m_tfliteModelPath);

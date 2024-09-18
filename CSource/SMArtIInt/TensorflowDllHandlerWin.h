@@ -9,6 +9,9 @@
 #include <minwindef.h>
 #include <libloaderapi.h>
 #include "TensorflowDllHandler.h"
+#include <windows.h>
+
+
 
 class TensorflowDllHandlerWin : public TensorflowDllHandler {
 public:
@@ -27,8 +30,8 @@ public:
         (*_f_interpreterDelete)(interpreter);
     }
 
-    void interpreterOptionsDelete(TfLiteInterpreter *interpreter) override {
-        (*_f_interpreterOptionsDelete)(interpreter);
+    void interpreterOptionsDelete(TfLiteInterpreterOptions* options) override {
+        (*_f_interpreterOptionsDelete)(options);
     }
 
     void modelDelete(TfLiteModel *model) override {
@@ -44,9 +47,8 @@ public:
         return (*_f_interpreterGetInputTensorCount)(interpreter);
     }
 
-    const TfLiteTensor *interpreterGetInputTensor(const TfLiteInterpreter *interpreter, int32_t input_index) override {
-        return reinterpret_cast<const TfLiteTensor *>((*_f_interpreterGetInputTensor)(interpreter, input_index));
-    }
+    TfLiteTensor *interpreterGetInputTensor(const TfLiteInterpreter *interpreter, int32_t input_index) override {
+        return reinterpret_cast< TfLiteTensor *>((*_f_interpreterGetInputTensor)(interpreter, input_index));    }
 
     const TfLiteTensor *
     interpreterGetOutputTensor(const TfLiteInterpreter *interpreter, int32_t output_index) override {
@@ -82,27 +84,30 @@ public:
         (*_f_interpreterOptionsAddDelegate)(options, delegate);
     }
 
+    int32_t tensorDim(const TfLiteTensor* tensor, int32_t dim_index) override {
+        return (*_f_tensorDim)(tensor, dim_index);
+    }
 
 private:
     HMODULE _module;
 
-    ProcPtr _f_createModelFromFile;
-    ProcPtr _f_interpreterDelete;
-    ProcPtr _f_interpreterOptionsDelete;
-    ProcPtr _f_modelDelete;
-    ProcPtr _f_interpreterCreate;
-    ProcPtr _f_interpreterAllocateTensors;
-    ProcPtr _f_interpreterGetInputTensorCount;
-    ProcPtr _f_interpreterGetInputTensor;
-    ProcPtr _f_interpreterGetOutputTensor;
-    ProcPtr _f_interpreterGetOutputTensorCount;
-    ProcPtr _f_interpreterInvoke;
-    ProcPtr _f_interpreterResizeInputTensor;
-    ProcPtr _f_interpreterModifyGraphWithDelegate;
-    ProcPtr _f_interpreterOptionsCreate;
-    ProcPtr _f_interpreterOptionsSetNumThreads;
-    ProcPtr _f_interpreterOptionsAddDelegate;
-
+    PFN_CREATEMODELFROMFILE _f_createModelFromFile;
+    PFN_INTERPRETERDELETE _f_interpreterDelete;
+    PFN_INTERPRETEROPTIONSDELETE _f_interpreterOptionsDelete;
+    PFN_MODELDELETE _f_modelDelete;
+    PFN_INTERPRETERCREATE _f_interpreterCreate;
+    PFN_INTERPRETERALLOCATETENSORS _f_interpreterAllocateTensors;
+    PFN_INTERPRETERGETINPUTTENSORCOUNT _f_interpreterGetInputTensorCount;
+    PFN_INTERPRETERGETINPUTTENSOR _f_interpreterGetInputTensor;
+    PFN_INTERPRETERGETOUTPUTTENSOR _f_interpreterGetOutputTensor;
+    PFN_INTERPRETERGETOUTPUTTENSORCOUNT _f_interpreterGetOutputTensorCount;
+    PFN_INTERPRETERINVOKE _f_interpreterInvoke;
+    PFN_INTERPRETERRESIZEINPUTTENSOR _f_interpreterResizeInputTensor;
+    PFN_INTERPRETERMODIFYGRAPHWITHDELEGATE _f_interpreterModifyGraphWithDelegate;
+    PFN_INTERPRETEROPTIONSCREATE _f_interpreterOptionsCreate;
+    PFN_INTERPRETEROPTIONSSETNUMTHREADS _f_interpreterOptionsSetNumThreads;
+    PFN_INTERPRETEROPTIONSADDDELEGATE _f_interpreterOptionsAddDelegate;
+    PFN_TENSORDIM _f_tensorDim;
 
     
 };
