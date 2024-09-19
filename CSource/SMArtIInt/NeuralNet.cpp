@@ -177,7 +177,7 @@ void TfLiteNeuralNet::loadAndInit(const char* tfliteModelPath)
 
 	// Handle states as additional inputs
 	if (mp_timeStepMngmt->isActive()) {
-		mp_modelicaUtilityHelper->ModelicaMessage("Handling additional inputs as states");
+		mp_modelicaUtilityHelper->ModelicaMessage("SMArtIInt: Handling additional inputs as states");
 		//mp_timeStepMngmt->setNumberOfStates(TfLiteInterpreterGetInputTensorCount(mp_interpreter) - 1);
 		for (int i = 1; i < TfLiteInterpreterGetInputTensorCount(mp_interpreter); ++i) {
 			try {
@@ -468,7 +468,7 @@ void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
 
     // Handle states as additional inputs
     if (mp_timeStepMngmt->isActive()) {
-        mp_modelicaUtilityHelper->ModelicaMessage("Handling additional inputs as states");
+        mp_modelicaUtilityHelper->ModelicaMessage("SMArtIInt: Handling additional inputs as states");
         tensorData = new std::vector<std::vector<float>>(static_cast<int>(mp_session->GetInputCount()) -1);
         for (int i = 1; i < mp_session->GetInputCount(); ++i) {
             try {
