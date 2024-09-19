@@ -1,5 +1,5 @@
-within SMArtIInt.Tester.PipeHeatTransferExample;
-model TestPipe_onnx
+within SMArtIInt.Tester.PipeHeatTransferExample.TFLite;
+model TestPipe_tflite
   extends Modelica.Icons.Example;
 
   replaceable package Medium = Modelica.Media.Water.ConstantPropertyLiquidWater annotation (choicesAllMatching=true);
@@ -11,7 +11,7 @@ model TestPipe_onnx
     nNodes=100,
     modelStructure=Modelica.Fluid.Types.ModelStructure.av_b,
     use_HeatTransfer=true,
-    redeclare replaceable model HeatTransfer = NNHeatTransfer_onnx) annotation (Placement(transformation(extent={{-10,-10},{10,10}})));
+    redeclare replaceable model HeatTransfer = TFLite.NNHeatTransfer_tflite) annotation (Placement(transformation(extent={{-10,-10},{10,10}})));
   Modelica.Fluid.Sources.Boundary_pT sink(redeclare package Medium = Medium, nPorts=1)
                                                                              annotation (Placement(transformation(extent={{68,-10},{48,10}})));
   Modelica.Fluid.Sources.MassFlowSource_T source(redeclare package Medium = Medium,
@@ -25,4 +25,4 @@ equation
   connect(fixedHeatFlow.port, pipe.heatPorts) annotation (Line(points={{-16,32},{0.1,32},{0.1,4.4}}, color={191,0,0}));
   connect(sink.ports[1], pipe.port_b) annotation (Line(points={{48,0},{10,0}}, color={0,127,255}));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(coordinateSystem(preserveAspectRatio=false)));
-end TestPipe_onnx;
+end TestPipe_tflite;

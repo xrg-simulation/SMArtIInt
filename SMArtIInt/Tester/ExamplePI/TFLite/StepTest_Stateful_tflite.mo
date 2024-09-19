@@ -1,6 +1,6 @@
-within SMArtIInt.Tester.ExamplePI;
+within SMArtIInt.Tester.ExamplePI.TFLite;
 model StepTest_Stateful_tflite
-  extends StepTest_RNN_tflite(redeclare TF_PI_Stateful_tflite controller);
+  extends TFLite.StepTest_RNN_tflite(redeclare TFLite.TF_PI_Stateful_tflite controller);
 
   annotation (
     Icon(coordinateSystem(preserveAspectRatio=false)),

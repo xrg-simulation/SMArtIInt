@@ -1,6 +1,6 @@
-within SMArtIInt.Tester.PipeHeatTransferExample;
+within SMArtIInt.Tester.PipeHeatTransferExample.ReferenceModels;
 model TestPipeRef
-  extends TestPipe_tflite
+  extends TFLite.TestPipe_tflite
                   (pipe(redeclare model HeatTransfer =
           Modelica.Fluid.Pipes.BaseClasses.HeatTransfer.LocalPipeFlowHeatTransfer));
 end TestPipeRef;

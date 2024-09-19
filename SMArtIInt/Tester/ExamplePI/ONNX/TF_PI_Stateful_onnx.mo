@@ -1,4 +1,4 @@
-within SMArtIInt.Tester.ExamplePI;
+within SMArtIInt.Tester.ExamplePI.ONNX;
 model TF_PI_Stateful_onnx
 
   Modelica.Blocks.Interfaces.RealInput  u annotation (Placement(transformation(extent={{-126,-20},{-86,20}})));

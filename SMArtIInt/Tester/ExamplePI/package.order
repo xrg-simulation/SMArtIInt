@@ -1,13 +1,3 @@
 ReferenceModels
-TF_PI_RNN_tflite
-TF_PI_RNN_onnx
-TF_PI_Stateful_tflite
-TF_PI_Stateful_onnx
-StepTest_RNN_tflite
-StepTest_RNN_onnx
-StepTest_Stateful_tflite
-StepTest_Stateful_onnx
-DoubleRoom_RNN_tflite
-DoubleRoom_RNN_onnx
-DoubleRoom_RNNState_tflite
-DoubleRoom_RNNState_onnx
+TFLite
+ONNX

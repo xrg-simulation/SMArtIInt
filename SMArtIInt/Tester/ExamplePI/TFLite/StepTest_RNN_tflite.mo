@@ -1,7 +1,7 @@
-within SMArtIInt.Tester.ExamplePI;
+within SMArtIInt.Tester.ExamplePI.TFLite;
 model StepTest_RNN_tflite
   extends Modelica.Icons.Example;
-  replaceable TF_PI_RNN_tflite
+  replaceable TFLite.TF_PI_RNN_tflite
                              controller constrainedby Modelica.Blocks.Interfaces.SISO
     annotation (Placement(transformation(extent={{-10,-10},{10,10}})), choicesAllMatching=true);
   Modelica.Blocks.Sources.Step step(startTime=10)   annotation (Placement(transformation(extent={{-82,-10},{-62,10}})));

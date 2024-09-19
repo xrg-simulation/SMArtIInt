@@ -22,6 +22,6 @@ equation
   connect(runInference.y, array2DDeflatteningModel.flatArray) annotation (Line(points={{10,0},{20.2,0}}, color={0,0,127}));
   annotation (Documentation(info="<html>
 <p>This is a specialized version of the BaseGenericNeuralNet. It can be used for neural networks which use several scalar inputs and outputs. The user has to create the wanted inputs and has to connect them to the input of the block array2DFlatteningModel. This input has the same shape [batchSize, numberOfInputs] of the input used in the tensorflow model. The individual input have to be fed into the last dimension. A batch size can be used simultaneously calculation.</p>
-<p>The example <a href=\"modelica://SMArtIInt.Tester.PipeHeatTransferExample.PipeLocalHeatTransfer_smallNN\">PipeLocalHeatTransfer_smallNN </a>extends this model.</p>
+<p>The example <a href=\"modelica://SMArtIInt.Tester.PipeHeatTransferExample.TFLite.PipeLocalHeatTransfer_smallNN\">PipeLocalHeatTransfer_smallNN </a>extends this model.</p>
 </html>"));
 end BaseFeedForwardNeuralNet;

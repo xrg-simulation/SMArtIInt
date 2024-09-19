@@ -1,4 +1,4 @@
-within SMArtIInt.Tester.PipeHeatTransferExample;
+within SMArtIInt.Tester.PipeHeatTransferExample.ONNX;
 model PipeLocalHeatTransfer_onnx
 
   parameter Integer batchSize = 1 "number of simultaneous evaluations";

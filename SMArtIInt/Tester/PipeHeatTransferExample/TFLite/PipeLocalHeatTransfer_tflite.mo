@@ -1,4 +1,4 @@
-within SMArtIInt.Tester.PipeHeatTransferExample;
+within SMArtIInt.Tester.PipeHeatTransferExample.TFLite;
 model PipeLocalHeatTransfer_tflite
 
   parameter Integer batchSize = 1 "number of simultaneous evaluations";

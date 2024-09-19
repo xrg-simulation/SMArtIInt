@@ -1,4 +1,4 @@
-within SMArtIInt.Tester.PipeHeatTransferExample;
+within SMArtIInt.Tester.PipeHeatTransferExample.ONNX;
 model TestModelEvaluation_onnx
   extends Modelica.Icons.Example;
 
@@ -13,7 +13,7 @@ model TestModelEvaluation_onnx
   final parameter Real acc(unit="m/s2") = 1;
   Modelica.Units.SI.Velocity vs;
 
-  replaceable NNHeatTransfer_onnx                         heatTransfer constrainedby
+  replaceable ONNX.NNHeatTransfer_onnx                    heatTransfer constrainedby
     Modelica.Fluid.Pipes.BaseClasses.HeatTransfer.PartialPipeFlowHeatTransfer(
     redeclare final package Medium = Medium,
     final n=n,

@@ -1,6 +1,6 @@
-within SMArtIInt.Tester.ExamplePI;
+within SMArtIInt.Tester.ExamplePI.ONNX;
 model StepTest_Stateful_onnx
-  extends StepTest_RNN_tflite(redeclare TF_PI_Stateful_onnx controller);
+  extends TFLite.StepTest_RNN_tflite(redeclare ONNX.TF_PI_Stateful_onnx controller);
 
   annotation (
     Icon(coordinateSystem(preserveAspectRatio=false)),

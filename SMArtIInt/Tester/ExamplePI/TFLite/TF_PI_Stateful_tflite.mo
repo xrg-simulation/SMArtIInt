@@ -1,4 +1,4 @@
-within SMArtIInt.Tester.ExamplePI;
+within SMArtIInt.Tester.ExamplePI.TFLite;
 model TF_PI_Stateful_tflite
 
   Modelica.Blocks.Interfaces.RealInput  u annotation (Placement(transformation(extent={{-126,-20},{-86,20}})));

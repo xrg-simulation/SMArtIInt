@@ -1,4 +1,4 @@
-within SMArtIInt.Tester.ExamplePI;
+within SMArtIInt.Tester.ExamplePI.TFLite;
 model TF_PI_RNN_tflite
 
   Modelica.Blocks.Interfaces.RealOutput

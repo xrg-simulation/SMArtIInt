@@ -1,4 +1,4 @@
-within SMArtIInt.Tester.PipeHeatTransferExample;
+within SMArtIInt.Tester.PipeHeatTransferExample.TFLite;
 model TestModelEvaluation_tflite
   extends Modelica.Icons.Example;
 
@@ -13,7 +13,7 @@ model TestModelEvaluation_tflite
   final parameter Real acc(unit="m/s2") = 1;
   Modelica.Units.SI.Velocity vs;
 
-  replaceable NNHeatTransfer_tflite                         heatTransfer constrainedby
+  replaceable TFLite.NNHeatTransfer_tflite                  heatTransfer constrainedby
     Modelica.Fluid.Pipes.BaseClasses.HeatTransfer.PartialPipeFlowHeatTransfer(
     redeclare final package Medium = Medium,
     final n=n,

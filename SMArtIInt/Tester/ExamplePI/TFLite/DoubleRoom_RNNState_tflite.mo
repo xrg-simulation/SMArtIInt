@@ -1,6 +1,6 @@
-within SMArtIInt.Tester.ExamplePI;
+within SMArtIInt.Tester.ExamplePI.TFLite;
 model DoubleRoom_RNNState_tflite
-  extends ReferenceModels.DoubleRoom_ContinuousPI(redeclare TF_PI_Stateful_tflite controller);
+  extends ReferenceModels.DoubleRoom_ContinuousPI(redeclare TFLite.TF_PI_Stateful_tflite controller);
   annotation (experiment(
       StopTime=300000,
       __Dymola_NumberOfIntervals=5000,

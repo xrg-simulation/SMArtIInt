@@ -1,4 +1,4 @@
-within SMArtIInt.Tester.ExamplePI;
+within SMArtIInt.Tester.ExamplePI.ONNX;
 model TF_PI_RNN_onnx
 
   Modelica.Blocks.Interfaces.RealOutput

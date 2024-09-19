@@ -1,8 +1,8 @@
-within SMArtIInt.Tester.PipeHeatTransferExample;
+within SMArtIInt.Tester.PipeHeatTransferExample.ONNX;
 model NNHeatTransfer_onnx
   extends Modelica.Fluid.Pipes.BaseClasses.HeatTransfer.PartialPipeFlowHeatTransfer;
 
-  replaceable PipeLocalHeatTransfer_onnx pipeLocalHeatTransfer(batchSize=n) annotation (Placement(transformation(extent={{-10,-10},{10,10}})));
+  replaceable ONNX.PipeLocalHeatTransfer_onnx pipeLocalHeatTransfer(batchSize=n) annotation (Placement(transformation(extent={{-10,-10},{10,10}})));
   Modelica.Blocks.Sources.RealExpression Expr_Res[n](y=Res) annotation (Placement(transformation(extent={{-74,4},{-54,24}})));
   Modelica.Blocks.Sources.RealExpression Expr_Prs[n](y=Prs) annotation (Placement(transformation(extent={{-74,-12},{-54,8}})));
   Modelica.Blocks.Sources.RealExpression Expr_dByLs[n](y={diameters[i]/lengths[i]/(if vs[i] >= 0 then (i - 0.5) else (n - i + 0.5)) for i in 1:n}) annotation (Placement(transformation(extent={{-74,-30},{-54,-10}})));
