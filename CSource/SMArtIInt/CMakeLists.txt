@@ -57,7 +57,7 @@ else ()
 	target_link_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}//External"
     )
-	set(ADDITIONAL_LIBRARY_DEPENDENCIES "onnxruntime")
+	set(ADDITIONAL_LIBRARY_DEPENDENCIES "onnxruntime_c")
 	target_link_libraries(${PROJECT_NAME} PUBLIC "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
 	target_link_directories(${PROJECT_NAME} PUBLIC
 			"${CMAKE_CURRENT_SOURCE_DIR}//External"
