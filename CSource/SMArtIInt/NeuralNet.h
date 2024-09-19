@@ -3,7 +3,6 @@
 #include <string>
 #include <stdexcept>
 #include "tensorflow/lite/c/common.h"
-#include <stdlib.h>
 #include "../../SMArtIInt/Resources/Include/ModelicaUtilityHelper.h"
 #include "tensorflow/lite/c/c_api.h"
 #include "InputManagement.h"
@@ -14,7 +13,7 @@ class NeuralNet
 {
 public:
 	NeuralNet(ModelicaUtilityHelper* p_modelicaUtilityHelper, const char* tfLiteModelPath,
-		unsigned int dymInputDim, unsigned int* p_dymInputSizes, unsigned int dymOutputDim, unsigned int* p_dymOutputSizes,
+		int32_t dymInputDim, const unsigned int* p_dymInputSizes, unsigned int dymOutputDim, const unsigned int* p_dymOutputSizes,
 		bool stateful, double fixInterval);
 
 	~NeuralNet();
@@ -52,7 +51,7 @@ private:
 	void (*mfp_castOutput)(double&, void*, unsigned int); // pointer to output casting function
 
 	// in and output
-	unsigned int m_inputDim = 0; // dimension of input as specified in modelica
+	int32_t m_inputDim = 0; // dimension of input as specified in modelica
 	unsigned int* mp_inputSizes = nullptr; // sizes of input as specified in modelica
 	unsigned int m_nInputEntries; // total number of input entries
 	TfLiteTensor* mp_flatInputTensor = nullptr; // pointer to flat input tensors from nn

@@ -1,5 +1,4 @@
 #include "InputManagement.h"
-#include <iostream>
 #include "tensorflow/lite/c/c_api.h"
 #include "Utils.h"
 #include <vector>
@@ -28,17 +27,14 @@ InputManagement::InputManagement(bool stateful, double fixInterval,
 	
 	m_nStateArr = 0;
 	m_nStateValues = 0;
-
-	return;
-
 }
 
 InputManagement::~InputManagement()
 {
-	if (mp_flatInterpolatedInp) delete mp_flatInterpolatedInp;
+	delete mp_flatInterpolatedInp;
 }
 
-bool InputManagement::isActive()
+bool InputManagement::isActive() const
 {
 	return m_active;
 }
@@ -64,19 +60,16 @@ bool InputManagement::addStateOut(const TfLiteTensor* stateOutTensor)
 		if (ret < 0) {
 			throw std::invalid_argument(Utils::string_format("Unmatched number of dimension for state input and output # %i"
 				" (Input has %i dimensions whereas output has %i dimensions)!", i, unmatchedVals[0], unmatchedVals[1]));
-			return false;
 		}
 		else if (ret > 0) {
 			throw std::invalid_argument(Utils::string_format("Unmatched number of sizes for state input and output # %i in dimension %i "
 				"(Input has %i entries whereas output has %i entries)!"
 				, i, ret, unmatchedVals[0], unmatchedVals[1]));
-			return false;
 		}
 	}
 	else {
 		// Error
 		throw std::invalid_argument(Utils::string_format("SMArtInt can only handle states in stateful=True if state inputs and state outputs are matching!"));
-		return false;
 	}
 	//ToDo check type (and sizes??)
 	return true;
@@ -127,7 +120,7 @@ double* InputManagement::handleInpts(double time, unsigned int iStep, double* fl
 	return input_pointer;
 }
 
-unsigned int InputManagement::manageNewStep(double time, bool firstInvoke, double* input)
+unsigned int InputManagement::manageNewStep(double time, bool firstInvoke, const double* input)
 {
 	unsigned int nSteps;
 	if (m_active && m_fixTimeIntv > 0) {
@@ -200,7 +193,6 @@ void InputManagement::initialize()
 				break;
 			default:
 				throw std::invalid_argument("Could not convert state data - SMArtIInt currently only supports TFLite models using floats)!");
-				break;
 		}
 
 		void* p_data = m_stateBuffer.getPrevValue()->at(iInput);
@@ -233,7 +225,6 @@ void InputManagement::initialize(double* p_stateValues, const unsigned int &nSta
 			break;
 		default:
 			throw std::invalid_argument("Could not convert state data - SMArtIInt currently only supports TFLite models using floats)!");
-			break;
 		}
 
 		void* p_data = m_stateBuffer.getPrevValue()->at(iInput);

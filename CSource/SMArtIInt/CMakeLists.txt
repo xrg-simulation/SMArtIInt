@@ -25,7 +25,6 @@ set(Quelldateien
     "InterfaceFunctions.cpp"
     "NeuralNet.cpp"
     "Utils.cpp"
-    "RollingBuffer.cpp"
 )
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	list(APPEND Headerdateien "TensorflowDllHandlerLinux.cpp")

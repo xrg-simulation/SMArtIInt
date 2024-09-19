@@ -122,7 +122,7 @@ private:
     PFN_TENSORDATA _f_tensorData;
     PFN_TENSORBYTESIZE _f_tensorByteSize;
 
-    void handleError();
+    static void handleError();
 };
 
 #endif //SMARTIINT_TENSORFLOWDLLHANDLERLINUX_H

@@ -19,7 +19,7 @@ public:
 	bool update(const idT& bufferIdx, const int& jumpEstimate, int& updatedEstimate); // update the buffer with given index 
 
 private:
-	int m_bufferSize = 0; //Total number of previous elements
+	unsigned int m_bufferSize = 0; //Total number of previous elements
 
 	idT* mp_bufferIdx = nullptr; // index of buffer
 
@@ -34,3 +34,6 @@ private:
 	void incrementIndices(); // increment all indices
 
 };
+
+// Include the implementation file
+#include "RollingBuffer.tpp"

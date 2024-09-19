@@ -18,7 +18,7 @@ private:
 	static const int m_nStoredSteps = 1000; // number of store previous steps
 
 	RollingBuffer<std::vector<double>, double> mp_inputBuffer = RollingBuffer<std::vector<double>, double>(m_nStoredSteps); // buffer for inputs
-	RollingBuffer<Utils::stateInputsContainer, int> m_stateBuffer = RollingBuffer<Utils::stateInputsContainer, int>(m_nStoredSteps); // buffer for states
+	RollingBuffer<Utils::stateInputsContainer, unsigned int> m_stateBuffer = RollingBuffer<Utils::stateInputsContainer, unsigned int>(m_nStoredSteps); // buffer for states
 
 	// arrays handling the normal function input
 	unsigned int m_nInputEntries = 0; // total number of input elements
@@ -36,14 +36,14 @@ public:
 
     TensorflowDllHandler* mp_tfDll;
 
-	bool isActive(); //check if is active
+	[[nodiscard]] bool isActive() const; //check if is active
 
 	// Allocation function to handle states
 	bool addStateInp(TfLiteTensor* stateInpTensor); // add state input tensor 
 	bool addStateOut(const TfLiteTensor* stateInpTensor); // add state output tensor
 
 	// functions handling the stored state values
-	unsigned int manageNewStep(double time, bool firstInvoke, double* input); // updates the buffer and returns the required number of calls of the neural net
+	unsigned int manageNewStep(double time, bool firstInvoke, const double* input); // updates the buffer and returns the required number of calls of the neural net
 	bool updateFinishedStep(double time, unsigned int nSteps); // updates the state buffer
 	void initialize(); // initialize all states with zeros
 	void initialize(double* p_stateValues, const unsigned int& nStateValues); // initialize all states with given values

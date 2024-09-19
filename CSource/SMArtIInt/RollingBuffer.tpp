@@ -15,8 +15,8 @@ RollingBuffer<T, idT>::RollingBuffer(unsigned int bufferSize)
 template <class T, class idT>
 RollingBuffer<T, idT>::~RollingBuffer()
 {
-	if (mp_buffer) delete[] mp_buffer;
-	if (mp_bufferIdx) delete[] mp_bufferIdx;
+	delete[] mp_buffer;
+	delete[] mp_bufferIdx;
 }
 
 template <class T, class idT>
@@ -141,7 +141,7 @@ bool RollingBuffer<T, idT>::update(const idT& bufferIdx, const int& jumpEstimate
 		mp_bufferIdx[m_currentIdx] = bufferIdx;
 	}
 	return found;
-};
+}
 
 template class RollingBuffer<std::vector<double>, double>;
 template class RollingBuffer<Utils::stateInputsContainer, int>;

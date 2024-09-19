@@ -5,7 +5,7 @@
 #include "windows.h"
 #else
 #include <dlfcn.h>
-#include <limits.h>
+#include <climits>
 #include <unistd.h>
 #endif
 
@@ -44,16 +44,14 @@ int Utils::getNumElementsTensor(const TfLiteTensor* A, TensorflowDllHandler* p_t
 void Utils::castToFloat(const double& value, void* p_store, unsigned int pos)
 {
 	// p_stores stores float values
-	float* p_float = (float*)p_store;
+	auto* p_float = (float*)p_store;
 	p_float[pos] = (float)value;
-
-	return;
 }
 
 void Utils::castFromFloat(double& value, void* p_store, unsigned int pos)
 {
 	// p_stores stores float values
-	float* p_float = (float*)p_store;
+	auto* p_float = (float*)p_store;
 	value = p_float[pos];
 }
 

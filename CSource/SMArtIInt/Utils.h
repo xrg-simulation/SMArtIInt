@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-//#include <tchar.h>
 #include <iostream>
 #include "tensorflow/lite/c/c_api.h"
 #include "TensorflowDllHandler.h"
@@ -19,7 +18,7 @@ namespace Utils
 		auto buf = std::make_unique<char[]>(size);
 		std::snprintf(buf.get(), size, format.c_str(), args ...);
 		return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
-	};
+	}
 
 	int compareTensorSizes(const TfLiteTensor* A, const TfLiteTensor* B, unsigned int* unmatchedVals,
                            TensorflowDllHandler* p_tfDll);
@@ -45,12 +44,13 @@ namespace Utils
 		~stateInputsContainer() {
 			for (auto& stateStorage : m_stateStorage) {
 				if (stateStorage) operator delete(stateStorage);
-			};
+			}
 		};
 
 		void addStateInput(TfLiteTensor* stateInpTensor, TensorflowDllHandler* p_tfDll) {
-			m_stateDataByteSizes.push_back(p_tfDll->tensorByteSize(stateInpTensor));
-			m_stateStorage.push_back(operator new(p_tfDll->tensorByteSize(stateInpTensor)));
+            auto byte_size = p_tfDll->tensorByteSize(stateInpTensor);
+            m_stateDataByteSizes.push_back(byte_size);
+			m_stateStorage.push_back(operator new(byte_size));
 		}
 
 		void* at(unsigned int i) {

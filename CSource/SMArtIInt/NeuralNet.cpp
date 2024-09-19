@@ -1,8 +1,5 @@
 
 #include "NeuralNet.h"
-#include "../../SMArtIInt/Resources/Include/ModelicaUtilityHelper.h"
-#include <iostream>
-//#include "tensorflow/lite/c/c_api.h"
 #include "Utils.h"
 #include <stdexcept>
 #ifdef _WIN32
@@ -10,12 +7,11 @@
 #else
 #include "TensorflowDllHandlerLinux.h"
 #endif
-#include "InterfaceFunctions.h"
 
 #include <vector>
 
-NeuralNet::NeuralNet(ModelicaUtilityHelper* p_modelicaUtilityHelper, const char* tfLiteModelPath, unsigned int dymInputDim,
-	unsigned int* p_dymInputSizes, unsigned int dymOutputDim, unsigned int* p_dymOutputSizes,
+NeuralNet::NeuralNet(ModelicaUtilityHelper* p_modelicaUtilityHelper, const char* tfLiteModelPath, int32_t dymInputDim,
+	const unsigned int* p_dymInputSizes, unsigned int dymOutputDim, const unsigned int* p_dymOutputSizes,
 	bool stateful, double fixInterval)
 {
 
@@ -24,8 +20,6 @@ NeuralNet::NeuralNet(ModelicaUtilityHelper* p_modelicaUtilityHelper, const char*
 
 	// handling of the input
 	m_inputDim = dymInputDim;
-	// clear the array if available
-	if (mp_inputSizes) delete mp_inputSizes;
 	// allocate array for input sizes
 	mp_inputSizes = new unsigned int[m_inputDim];
 	if (m_inputDim >= 1) {
@@ -42,8 +36,6 @@ NeuralNet::NeuralNet(ModelicaUtilityHelper* p_modelicaUtilityHelper, const char*
 
 	// handling of the output
 	m_outputDim = dymOutputDim;
-	// clear the array if available
-	if (mp_outputSizes) delete mp_outputSizes;
 	// allocate array for output dimensions
 	mp_outputSizes = new unsigned int[m_outputDim];
 	// check input
@@ -64,21 +56,32 @@ NeuralNet::NeuralNet(ModelicaUtilityHelper* p_modelicaUtilityHelper, const char*
         mp_modelicaUtilityHelper->ModelicaError("A stateful RNN is used with a samplePeriod less or equal than 0. "
                                                 "Please enter the grid interval used to train the model as samplePeriod!");
     }
-	mp_timeStepMngmt = new InputManagement(stateful, fixInterval, m_nInputEntries, mp_tfdll);
+
+
+#ifdef _WIN32
+    std::string tensorflowDllPath = Utils::getTensorflowDllPathWin();
+    mp_tfdll = new TensorflowDllHandlerWin(tensorflowDllPath.c_str());
+#else
+    std::string tensorflowDllPath = Utils::getTensorflowDllPathLinux();
+        mp_tfdll = new TensorflowDllHandlerLinux(tensorflowDllPath.c_str());
+#endif
+
+    mp_timeStepMngmt = new InputManagement(stateful, fixInterval, m_nInputEntries, mp_tfdll);
 
 	// perform steps to create model
 	loadAndInit(tfLiteModelPath);
+
 }
 
 NeuralNet::~NeuralNet()
 {
 	// clean up own arrays
-	if (mp_inputSizes) delete mp_inputSizes;
+	delete mp_inputSizes;
 	mp_inputSizes = nullptr;
 	m_inputDim = 0;
 	m_nInputEntries = 0;
 
-	if (mp_outputSizes) delete mp_outputSizes;
+	delete mp_outputSizes;
 	mp_outputSizes = nullptr;
 	m_outputDim = 0;
 	m_nOutputEntries = 0;
@@ -89,22 +92,14 @@ NeuralNet::~NeuralNet()
 	if (mp_model)  mp_tfdll->modelDelete(mp_model);
 
 	// clean up time step manager
-	if (mp_timeStepMngmt) delete mp_timeStepMngmt;
+	delete mp_timeStepMngmt;
 
     // clean up the dll handler
-    if (mp_tfdll) delete mp_tfdll;
+    delete mp_tfdll;
 }
 
 void NeuralNet::loadAndInit(const char* tfliteModelPath)
 {
-
-    #ifdef _WIN32
-        std::string tensorflowDllPath = Utils::getTensorflowDllPathWin();
-        mp_tfdll = new TensorflowDllHandlerWin(tensorflowDllPath.c_str());
-    #else
-        std::string tensorflowDllPath = Utils::getTensorflowDllPathLinux();
-        mp_tfdll = new TensorflowDllHandlerLinux(tensorflowDllPath.c_str());
-    #endif
 
 	m_tfliteModelPath = tfliteModelPath;
 
@@ -114,7 +109,7 @@ void NeuralNet::loadAndInit(const char* tfliteModelPath)
 	if (!mp_model) {
 		std::string message = Utils::string_format("SMArtInt: Model not found - check path: %s", m_tfliteModelPath);
 		mp_modelicaUtilityHelper->ModelicaError(message.c_str());
-	};
+	}
 	mp_options = mp_tfdll->interpreterOptionsCreate();
     mp_tfdll->interpreterOptionsSetNumThreads(mp_options, 1);
 
@@ -192,8 +187,6 @@ void NeuralNet::loadAndInit(const char* tfliteModelPath)
 	// dimensions etc of output tensor is only available after calling invoke so we check the infos after
 	// the call - that it is only done once use the following variable
 	m_firstInvoke = true;
-
-	return;
 }
 
 void NeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int inputLength, double* output, unsigned int outputLength)
@@ -202,12 +195,12 @@ void NeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int 
 	if (m_nInputEntries != inputLength) {
 		std::string message = Utils::string_format("SMArtInt: Wrong input length: in the interface were %i entries defined, whereas in current function call %i is specified!", m_nInputEntries, inputLength);
 		mp_modelicaUtilityHelper->ModelicaError(message.c_str());
-	};
+	}
 	// check output size
 	if (m_nOutputEntries != outputLength) {
 		std::string message = Utils::string_format("SMArtInt: Wrong output length: in the interface were %i entries defined, whereas in current function call %i is specified!", m_nOutputEntries, outputLength);
 		mp_modelicaUtilityHelper->ModelicaError(message.c_str());
-	};
+	}
 
     unsigned int nSteps = 0;
     try {
@@ -224,14 +217,14 @@ void NeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int 
 
 		// we write the data directly into the data array of the tensor - the casting function is set to the correct
 		// type
-		for (unsigned int i = 0; i < m_nInputEntries; ++i) {
-			mfp_castInput(inpInput[i], p_data, i);
+		for (unsigned int j = 0; j < m_nInputEntries; ++j) {
+			mfp_castInput(inpInput[j], p_data, j);
 		}
 
 		// Run inference
 		if (mp_tfdll->interpreterInvoke(mp_interpreter) != kTfLiteOk) {
 			mp_modelicaUtilityHelper->ModelicaError("Inference failed");
-		};
+		}
 	}
 
 	const TfLiteTensor* p_flatOutputTensor = mp_tfdll->interpreterGetOutputTensor(mp_interpreter, 0);
@@ -263,8 +256,6 @@ void NeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int 
 	}
 
 	mp_timeStepMngmt->updateFinishedStep(time, nSteps);
-
-	return;
 }
 
 void NeuralNet::initializeStates(double* p_stateValues, const unsigned int& nStateValues)
@@ -287,11 +278,11 @@ void NeuralNet::checkInputTensorSize()
 		mp_modelicaUtilityHelper->ModelicaError(message.c_str());
 	}
 	// check the sizes in each dimension except for the first which is the batch size
-	for (unsigned int i = 1; i < m_inputDim; ++i) {
+	for (int32_t i = 1; i < m_inputDim; ++i) {
 		if (mp_tfdll->tensorDim(mp_flatInputTensor, i) != int(mp_inputSizes[i]))
 		{
 			std::string message = "SMArtInt: Wrong input sizes. The loaded model has the sizes {";
-			for (unsigned int j = 0; j < m_inputDim; ++j) {
+			for (int32_t j = 0; j < m_inputDim; ++j) {
 				message += Utils::string_format("%i", mp_tfdll->tensorDim(mp_flatInputTensor, j));
 				if (j < (m_inputDim - 1)) message += ", ";
 			}
@@ -314,11 +305,11 @@ void NeuralNet::checkOutputTensorSize(const TfLiteTensor* p_flatOutputTensor)
 		std::string message = Utils::string_format("SMArtInt: Wrong output dimensions : the loaded model has %i dimensions whereas in the interface %i is specified!", mp_tfdll->tensorNumDims(p_flatOutputTensor), m_outputDim);
 		mp_modelicaUtilityHelper->ModelicaError(message.c_str());
 	}
-	for (unsigned int i = 0; i < m_outputDim; ++i) {
+	for (int32_t i = 0; i < m_outputDim; ++i) {
 		if (mp_tfdll->tensorDim(p_flatOutputTensor, i) != int(mp_outputSizes[i]))
 		{
 			std::string message = "SMArtInt: Wrong output sizes. The loaded model has the sizes {";
-			for (unsigned int j = 0; j < m_outputDim; ++j) {
+			for (int32_t j = 0; j < m_outputDim; ++j) {
 				message += Utils::string_format("%i", mp_tfdll->tensorDim(p_flatOutputTensor, j));
 				if (j < (m_outputDim - 1)) message += ", ";
 			}
