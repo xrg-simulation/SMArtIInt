@@ -1,7 +1,7 @@
 #pragma once
 #include "tensorflow/lite/c/c_api.h"
 #include <string>
-#include "RollingBuffer.h"
+#include "NNBuffer.h"
 #include <vector>
 #include "Utils.h"
 #include "TensorflowDllHandler.h"
@@ -15,10 +15,8 @@ private:
 
 	double m_startTime = 0; // time of the first call
 
-	static const int m_nStoredSteps = 1000; // number of store previous steps
-
-	RollingBuffer<std::vector<double>, double> mp_inputBuffer = RollingBuffer<std::vector<double>, double>(m_nStoredSteps); // buffer for inputs
-	RollingBuffer<Utils::stateInputsContainer, unsigned int> m_stateBuffer = RollingBuffer<Utils::stateInputsContainer, unsigned int>(m_nStoredSteps); // buffer for states
+	NNBuffer<std::vector<double>, double> mp_inputBuffer = NNBuffer<std::vector<double>, double>(); // buffer for inputs
+	NNBuffer<Utils::stateInputsContainer, double> m_stateBuffer = NNBuffer<Utils::stateInputsContainer, double>(); // buffer for states
 
 	// arrays handling the normal function input
 	unsigned int m_nInputEntries = 0; // total number of input elements
@@ -43,10 +41,11 @@ public:
 	bool addStateOut(const TfLiteTensor* stateInpTensor); // add state output tensor
 
 	// functions handling the stored state values
-	unsigned int manageNewStep(double time, bool firstInvoke, const double* input); // updates the buffer and returns the required number of calls of the neural net
+    void storeInputs(double time, const double* input);
+	unsigned int calculateNumberOfSteps(double time, bool firstInvoke); // updates the buffer and returns the required number of calls of the neural net
 	bool updateFinishedStep(double time, unsigned int nSteps); // updates the state buffer
-	void initialize(); // initialize all states with zeros
-	void initialize(double* p_stateValues, const unsigned int& nStateValues); // initialize all states with given values
+	void initialize(double time); // initialize all states with zeros
+	void initialize(double time, double* p_stateValues, const unsigned int& nStateValues); // initialize all states with given values
 
 	double* handleInpts(double time, unsigned int iStep, double* flatInp, bool firstInvoke); // function for interpolation of normal input data
 

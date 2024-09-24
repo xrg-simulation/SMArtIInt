@@ -28,7 +28,7 @@ extern "C" {
 	EXPORT void NeuralNet_runInferenceFlatTensor(void* externalObject, double time, double* input, unsigned int inputLength,
 		double* output, unsigned int outputLength);
 
-	EXPORT void NeuralNet_initializeStates(void* externalObject, double* states, unsigned int nStateValues);
+	EXPORT void NeuralNet_initializeStates(void* externalObject, double time, double* states, unsigned int nStateValues);
 
 #ifdef __cplusplus
 }

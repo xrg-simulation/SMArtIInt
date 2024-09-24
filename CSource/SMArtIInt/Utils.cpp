@@ -65,14 +65,14 @@ std::string Utils::getTensorflowDllPathWin() {
                           (LPCSTR) &NeuralNet_createObject, &hm) == 0)
     {
         int ret = GetLastError();
-        std::string message = Utils::string_format("SMArtInt: Unable to locate tensorflow dll");
+        std::string message = Utils::string_format("SMArtIInt: Unable to locate tensorflow dll");
         //mp_modelicaUtilityHelper->ModelicaError(message.c_str());
         throw std::runtime_error(message);
     }
     if (GetModuleFileName(hm, path, sizeof(path)) == 0)
     {
         int ret = GetLastError();
-        std::string message = Utils::string_format("SMArtInt: Unable to locate tensorflow dll");
+        std::string message = Utils::string_format("SMArtIInt: Unable to locate tensorflow dll");
         throw std::runtime_error(message);
     }
 
@@ -90,14 +90,14 @@ std::string Utils::getTensorflowDllPathLinux() {
 
     // Get the address of a symbol in the shared library
     if (dladdr((void*) &NeuralNet_createObject, &dl_info) == 0) {
-        std::string message = "SMArtInt: Unable to locate tensorflow shared library";
+        std::string message = "SMArtIInt: Unable to locate tensorflow shared library";
         throw std::runtime_error(message);
     }
 
     char path[PATH_MAX];
     ssize_t count = readlink(dl_info.dli_fname, path, PATH_MAX);
     if (count == -1) {
-        std::string message = "SMArtInt: Unable to locate tensorflow shared library path";
+        std::string message = "SMArtIInt: Unable to locate tensorflow shared library path";
         throw std::runtime_error(message);
     }
 

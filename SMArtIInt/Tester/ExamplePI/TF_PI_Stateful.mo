@@ -15,6 +15,7 @@ initial equation
   // explicitly initialize states - if not done default value of 0 is used anyway!
   SMArtIInt.Internal.InterfaceFunctions.initializeStates(
     smartiint,
+    time,
     {0, 0});
 
 equation

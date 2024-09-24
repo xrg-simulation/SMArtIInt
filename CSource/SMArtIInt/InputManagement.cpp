@@ -16,9 +16,6 @@ InputManagement::InputManagement(bool stateful, double fixInterval,
 	m_nInputEntries = nInputEntries;
 
 	if (m_active && m_fixTimeIntv > 0) {
-		for (unsigned int i = 0; i < m_nStoredSteps; ++i) {
-			mp_inputBuffer.getElement(i)->resize(nInputEntries);
-		}
 		mp_flatInterpolatedInp = new double[nInputEntries];
 	}
 	else {
@@ -42,9 +39,6 @@ bool InputManagement::isActive() const
 bool InputManagement::addStateInp(TfLiteTensor* stateInpTensor)
 {
 	m_nStateArr += 1;
-	for (unsigned int i = 0; i < m_nStoredSteps; ++i) {
-		m_stateBuffer.getElement(i)->addStateInput(stateInpTensor, mp_tfDll);
-	}
 	mp_stateInpTensors.push_back(stateInpTensor);
 	m_nStateValues += Utils::getNumElementsTensor(stateInpTensor, mp_tfDll);
 	return true;
@@ -56,20 +50,26 @@ bool InputManagement::addStateOut(const TfLiteTensor* stateOutTensor)
 	if (i < m_nStateArr) {
 		mp_stateOutTensors.push_back(stateOutTensor);
 		unsigned int unmatchedVals[2];
-		int ret = Utils::compareTensorSizes(mp_stateInpTensors[i], mp_stateOutTensors[i], unmatchedVals, mp_tfDll);
+		int ret = Utils::compareTensorSizes(mp_stateInpTensors[i], mp_stateOutTensors[i],
+                                            unmatchedVals, mp_tfDll);
 		if (ret < 0) {
-			throw std::invalid_argument(Utils::string_format("Unmatched number of dimension for state input and output # %i"
-				" (Input has %i dimensions whereas output has %i dimensions)!", i, unmatchedVals[0], unmatchedVals[1]));
+			throw std::invalid_argument(Utils::string_format("Unmatched number of dimension for state "
+                                                             "input and output # %i (Input has %i dimensions whereas "
+                                                             "output has %i dimensions)!",
+                                                             i, unmatchedVals[0], unmatchedVals[1]));
 		}
 		else if (ret > 0) {
-			throw std::invalid_argument(Utils::string_format("Unmatched number of sizes for state input and output # %i in dimension %i "
-				"(Input has %i entries whereas output has %i entries)!"
-				, i, ret, unmatchedVals[0], unmatchedVals[1]));
+			throw std::invalid_argument(Utils::string_format("Unmatched number of sizes for state input "
+                                                             "and output # %i in dimension %i (Input has %i entries "
+                                                             "whereas output has %i entries)!",
+                                                             i, ret, unmatchedVals[0], unmatchedVals[1]));
 		}
 	}
 	else {
 		// Error
-		throw std::invalid_argument(Utils::string_format("SMArtInt can only handle states in stateful=True if state inputs and state outputs are matching!"));
+		throw std::invalid_argument("SMArtIInt can only handle states in "
+                                                         "stateful=True if state inputs and state outputs are "
+                                                         "matching!");
 	}
 	//ToDo check type (and sizes??)
 	return true;
@@ -77,18 +77,24 @@ bool InputManagement::addStateOut(const TfLiteTensor* stateOutTensor)
 
 double* InputManagement::handleInpts(double time, unsigned int iStep, double* flatInp, bool firstInvoke)
 {
-	// calculate the grid time at which the NNs has to be evaluated
-	double gridTime = m_startTime + (int((mp_inputBuffer.getPrevIdx() - m_startTime) / m_fixTimeIntv) + (iStep + 1.0)) * m_fixTimeIntv;
+    // stateful NN need to be evaluated a grid times. This method interpolates the inputs @time to the previous grid
+    // interval specified with iStep; additionally the states itself are either taken from the buffer for an initial
+    // step (iStep=0) or they are copied from the outputs which contain the values from the previous invoke
 
 	double* input_pointer;
 
 	if (m_active && m_fixTimeIntv > 0) {
 		// Interpolation of the regular input onto grid
-		if (!firstInvoke) {
+		if (mp_inputBuffer.size() > 1) {
 			std::vector<double>* currentInput = mp_inputBuffer.getCurrentValue();
 			std::vector<double>* prevInput = mp_inputBuffer.getPrevValue();
+            // calculate the grid time at which the NNs has to be evaluated
+            double gridTime = m_startTime + (int((mp_inputBuffer.getPrevIdx() - m_startTime) / m_fixTimeIntv)
+                                             + (iStep + 1.0)) * m_fixTimeIntv;
 			for (std::size_t i = 0; i < currentInput->size(); ++i) {
-				mp_flatInterpolatedInp[i] = prevInput->at(i) + (flatInp[i] - prevInput->at(i)) / (time - mp_inputBuffer.getPrevIdx()) * (gridTime - mp_inputBuffer.getPrevIdx());
+				mp_flatInterpolatedInp[i] = prevInput->at(i) +
+                        (flatInp[i] - prevInput->at(i)) / (time - mp_inputBuffer.getPrevIdx())
+                        * (gridTime - mp_inputBuffer.getPrevIdx());
 			}
 		}
 		else {
@@ -98,10 +104,12 @@ double* InputManagement::handleInpts(double time, unsigned int iStep, double* fl
 		}
 		// Handling of the state inputs
 		if (iStep == 0) {
-			// initialize states with results from previously accepted step
-			Utils::stateInputsContainer* stateInputs = m_stateBuffer.getPrevValue();
+			// initialize states with results from previously accepted step (take it from buffer)
+            // the state buffer is filled after a successful step, so we have to take the current value
+			Utils::stateInputsContainer* stateInputs = m_stateBuffer.getCurrentValue();
 			for (unsigned int i = 0; i < m_nStateArr; ++i) {
-				std::memcpy(mp_tfDll->tensorData(mp_stateInpTensors[i]), stateInputs->at(i), stateInputs->byteSizeAt(i));
+				std::memcpy(mp_tfDll->tensorData(mp_stateInpTensors[i]), stateInputs->at(i),
+                            stateInputs->byteSizeAt(i));
 			}
 		}
 		else {
@@ -120,46 +128,31 @@ double* InputManagement::handleInpts(double time, unsigned int iStep, double* fl
 	return input_pointer;
 }
 
-unsigned int InputManagement::manageNewStep(double time, bool firstInvoke, const double* input)
+void InputManagement::storeInputs(double time, const double* input){
+    if (m_active && m_fixTimeIntv > 0) {
+
+        // store the values required for the inputs of the NN in the buffer
+        std::vector<double> *p_store = new std::vector<double>(input, input + m_nInputEntries);
+        mp_inputBuffer.store(time, p_store);
+
+    }
+}
+
+unsigned int InputManagement::calculateNumberOfSteps(const double time, bool firstInvoke)
 {
 	unsigned int nSteps;
 	if (m_active && m_fixTimeIntv > 0) {
 		unsigned int iStep;
-		if (firstInvoke) {
+
+		if (firstInvoke || mp_inputBuffer.size() <= 1) {
 			m_startTime = time;
 			nSteps = 1;
-			mp_inputBuffer.initializeIdx(time, m_fixTimeIntv);
-			std::vector<double>* value = mp_inputBuffer.getCurrentValue();
-			for (std::size_t i = 0; i < value->size(); ++i) {
-				value->at(i) = input[i];
-			}
 		}
 		else
 		{
-			int test;
-			if (!mp_inputBuffer.update(time, 1, test))
-			{
-				throw std::out_of_range(Utils::string_format("Index not found in buffer - need to go back more than %i steps after rejection. Contact support!", m_nStoredSteps));
-			}
-
-			std::vector<double>* value = mp_inputBuffer.getCurrentValue();
-			for (std::size_t i = 0; i < value->size(); ++i) {
-				value->at(i) = input[i];
-			}
-
 			iStep = int(time / m_fixTimeIntv);
 			nSteps = iStep - int((mp_inputBuffer.getPrevIdx() - m_startTime) / m_fixTimeIntv);
 			if (nSteps <= 0) nSteps = 0;
-		}
-		if (firstInvoke) {
-			m_stateBuffer.initializeIdx(0, 2);
-		}
-		else {
-			int test;
-			if (!m_stateBuffer.update(iStep, 1, test))
-			{
-                throw std::out_of_range(Utils::string_format("Index not found in buffer - need to go back more than %i steps after rejection. Contact support!", m_nStoredSteps));
-			}
 		}
 	}
 	else {
@@ -171,47 +164,37 @@ unsigned int InputManagement::manageNewStep(double time, bool firstInvoke, const
 bool InputManagement::updateFinishedStep(double time, unsigned int nSteps)
 {
 	if (nSteps > 0) {
-		for (unsigned int i = 0; i < m_nStateArr; ++i) {
-			// handle the states
-			std::memcpy(m_stateBuffer.getCurrentValue()->at(i), mp_tfDll->tensorData(mp_stateOutTensors[i]), m_stateBuffer.getCurrentValue()->byteSizeAt(i));
-		}
+        const auto test =  new Utils::stateInputsContainer();
+
+        for (unsigned int i = 0; i < m_nStateArr; ++i) {
+            test->addStateInput(mp_stateInpTensors[i], mp_tfDll);
+            // handle the states
+            std::memcpy(test->at(i), mp_tfDll->tensorData(mp_stateOutTensors[i]),
+                        m_stateBuffer.getCurrentValue()->byteSizeAt(i));
+        }
+        m_stateBuffer.store(time, test);
 	}
 	return true;
 }
 
-void InputManagement::initialize()
+void InputManagement::initialize(double time)
 {
-	for (unsigned int iInput = 0; iInput < m_nStateArr; ++iInput) {
-		// the initialization will be done with m_currIdx = 0 and m_prvIdx = m_nStoredSteps - 1
-		// therefore we store the the data in the last available index
+    auto* test = new double[m_nStateValues];
+    for (unsigned int i=0;i<m_nStateValues;++i){
+        test[i] = 0;
+    }
 
-		void (*castFunc)(const double&, void*, unsigned int);
-
-		switch (mp_tfDll->tensorType(mp_stateInpTensors[iInput])) {
-			case kTfLiteFloat32:
-				castFunc = &Utils::castToFloat;
-				break;
-			default:
-				throw std::invalid_argument("Could not convert state data - SMArtIInt currently only supports TFLite models using floats)!");
-		}
-
-		void* p_data = m_stateBuffer.getPrevValue()->at(iInput);
-
-		unsigned int n = Utils::getNumElementsTensor(mp_stateInpTensors[iInput], mp_tfDll);
-
-		for (unsigned int i = 0; i < n; ++i) {
-			castFunc(0.0, p_data, i);
-		}
-
-	}
+    this->initialize(time, test, m_nStateValues);
+    delete[] test;
 }
 
-void InputManagement::initialize(double* p_stateValues, const unsigned int &nStateValues)
+void InputManagement::initialize(double time, double* p_stateValues, const unsigned int &nStateValues)
 {
 	unsigned int counter = 0;
+    const auto test =  new Utils::stateInputsContainer();
 	for (unsigned int iInput = 0; iInput < m_nStateArr; ++iInput) {
 		// the initialization will be done with m_currIdx = 0 and m_prvIdx = m_nStoredSteps - 1
-		// therefore we store the the data in the last available index
+		// therefore we store the data in the last available index
 
 		if (nStateValues != m_nStateValues) {
 			throw std::invalid_argument(Utils::string_format("SMArtIInt needs to initialize %i but %i are given", m_nStateValues, nStateValues));
@@ -227,7 +210,9 @@ void InputManagement::initialize(double* p_stateValues, const unsigned int &nSta
 			throw std::invalid_argument("Could not convert state data - SMArtIInt currently only supports TFLite models using floats)!");
 		}
 
-		void* p_data = m_stateBuffer.getPrevValue()->at(iInput);
+        test->addStateInput(mp_stateInpTensors[iInput], mp_tfDll);
+
+		void* p_data = test->at(iInput);
 
 		unsigned int n = Utils::getNumElementsTensor(mp_stateInpTensors[iInput], mp_tfDll);
 
@@ -237,6 +222,7 @@ void InputManagement::initialize(double* p_stateValues, const unsigned int &nSta
 		}
 		counter += 1;
 	}
+    m_stateBuffer.store(time, test);
 }
 
 

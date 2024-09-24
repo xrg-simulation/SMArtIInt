@@ -10,7 +10,7 @@ set(Headerdateien
 		"InterfaceFunctions.h"
 		"NeuralNet.h"
 		"Utils.h"
-		"RollingBuffer.h"
+		"NNBuffer.h"
 		"TensorflowDllHandler.h"
 )
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")

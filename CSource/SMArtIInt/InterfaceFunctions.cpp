@@ -29,9 +29,9 @@ void NeuralNet_runInferenceFlatTensor(void* externalObject, double time, double*
 	p_neuralNet->runInferenceFlatTensor(time, input, inputLength, output, outputLength);
 }
 
-void NeuralNet_initializeStates(void* externalObject, double* states, unsigned int nStateValues)
+void NeuralNet_initializeStates(void* externalObject, double time,  double* states, unsigned int nStateValues)
 {
 	// cast to actual pointer
 	auto* p_neuralNet = (NeuralNet*)externalObject;
-	p_neuralNet->initializeStates(states, nStateValues);
+	p_neuralNet->initializeStates(time, states, nStateValues);
 }

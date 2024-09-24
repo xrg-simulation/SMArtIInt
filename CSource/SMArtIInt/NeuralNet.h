@@ -20,7 +20,7 @@ public:
 
 	void runInferenceFlatTensor(double time, double* input, unsigned int inputLength, double* output, unsigned int outputLength); // invoke the model
 
-	void initializeStates(double* p_stateValues, const unsigned int& nStateValues); // function to intialize states with given values
+	void initializeStates(double time, double* p_stateValues, const unsigned int& nStateValues); // function to initialize states with given values
 
 private:
 	
@@ -61,6 +61,7 @@ private:
 	unsigned int m_nOutputEntries; // total number of output elements
 
 	bool m_firstInvoke = true; // flag if outputs needs to be allocated etc
+    bool m_statesInitialized = false;
 };
 
 

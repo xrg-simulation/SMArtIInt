@@ -103,11 +103,11 @@ void NeuralNet::loadAndInit(const char* tfliteModelPath)
 
 	m_tfliteModelPath = tfliteModelPath;
 
-	//mp_model = TfLiteModelCreateFromFile(m_tfliteModelPath);
 	mp_model = mp_tfdll->createModelFromFile(m_tfliteModelPath);
 	// zero pointer is returned if not found
 	if (!mp_model) {
-		std::string message = Utils::string_format("SMArtInt: Model not found - check path: %s", m_tfliteModelPath);
+		std::string message = Utils::string_format("SMArtIInt: Model not found - check path: %s",
+                                                   m_tfliteModelPath);
 		mp_modelicaUtilityHelper->ModelicaError(message.c_str());
 	}
 	mp_options = mp_tfdll->interpreterOptionsCreate();
@@ -124,7 +124,7 @@ void NeuralNet::loadAndInit(const char* tfliteModelPath)
 		mp_modelicaUtilityHelper->ModelicaError("Failed to allocate tensors!");
 	// Find input tensors.
 	if (mp_tfdll->interpreterGetInputTensorCount(mp_interpreter) != 1 && !mp_timeStepMngmt->isActive())
-		mp_modelicaUtilityHelper->ModelicaError("SMArtInt can only handle models with single input");
+		mp_modelicaUtilityHelper->ModelicaError("SMArtIInt can only handle models with single input");
 
 	mp_flatInputTensor = mp_tfdll->interpreterGetInputTensor(mp_interpreter, 0);
 
@@ -139,7 +139,9 @@ void NeuralNet::loadAndInit(const char* tfliteModelPath)
 	// adjust first dimension which is batch size
 	if (mp_tfdll->tensorDim(mp_flatInputTensor, 0) != int(mp_inputSizes[0])) {
 
-		std::string message = "SMArtInt: Adjust first dimension from " + Utils::string_format("%i", mp_tfdll->tensorDim(mp_flatInputTensor, 0)) + " to batch size " + Utils::string_format("%i\n", mp_inputSizes[0]);
+		std::string message = "SMArtIInt: Adjust first dimension from " +
+                Utils::string_format("%i", mp_tfdll->tensorDim(mp_flatInputTensor, 0)) +
+                " to batch size " + Utils::string_format("%i\n", mp_inputSizes[0]);
 		mp_modelicaUtilityHelper->ModelicaMessage(message.c_str());
 
 		int* p_dymInputSizes;
@@ -159,12 +161,14 @@ void NeuralNet::loadAndInit(const char* tfliteModelPath)
 	// check the number of outputs
 	if (mp_tfdll->interpreterGetOutputTensorCount(mp_interpreter) != 1) {
 		if (mp_timeStepMngmt->isActive()) {
-			if (mp_tfdll->interpreterGetOutputTensorCount(mp_interpreter) != mp_tfdll->interpreterGetInputTensorCount(mp_interpreter)) {
-				mp_modelicaUtilityHelper->ModelicaError("SMArtInt: Stateful handling can only be done if model has the same number of inputs (=) and outputs");
+			if (mp_tfdll->interpreterGetOutputTensorCount(mp_interpreter) !=
+                mp_tfdll->interpreterGetInputTensorCount(mp_interpreter)) {
+				mp_modelicaUtilityHelper->ModelicaError("SMArtIInt: Stateful handling can only be done if model has "
+                                                        "the same number of inputs (=) and outputs");
 			}
 		}
 		else {
-			mp_modelicaUtilityHelper->ModelicaError("SMArtInt can only handle models with single output!");
+			mp_modelicaUtilityHelper->ModelicaError("SMArtIInt can only handle models with single output!");
 		}
 	}
 
@@ -174,14 +178,13 @@ void NeuralNet::loadAndInit(const char* tfliteModelPath)
 		//mp_timeStepMngmt->setNumberOfStates(TfLiteInterpreterGetInputTensorCount(mp_interpreter) - 1);
 		for (int i = 1; i < mp_tfdll->interpreterGetInputTensorCount(mp_interpreter); ++i) {
 			try {
-				mp_timeStepMngmt->addStateInp(mp_tfdll->interpreterGetInputTensor(mp_interpreter, i));
+				mp_timeStepMngmt->addStateInp(
+                        mp_tfdll->interpreterGetInputTensor(mp_interpreter, i));
 			}
 			catch (const std::invalid_argument& e) {
 				mp_modelicaUtilityHelper->ModelicaError(e.what());
 			}
 		}
-		// Initialize states if available
-		mp_timeStepMngmt->initialize();
 	}
 
 	// dimensions etc of output tensor is only available after calling invoke so we check the infos after
@@ -189,22 +192,32 @@ void NeuralNet::loadAndInit(const char* tfliteModelPath)
 	m_firstInvoke = true;
 }
 
-void NeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int inputLength, double* output, unsigned int outputLength)
+void NeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int inputLength, double* output,
+                                       unsigned int outputLength)
 {
 	// check the sizes
 	if (m_nInputEntries != inputLength) {
-		std::string message = Utils::string_format("SMArtInt: Wrong input length: in the interface were %i entries defined, whereas in current function call %i is specified!", m_nInputEntries, inputLength);
+		std::string message = Utils::string_format("SMArtIInt: Wrong input length: in the interface were %i "
+                                                   "entries defined, whereas in current function call %i is specified!",
+                                                   m_nInputEntries, inputLength);
 		mp_modelicaUtilityHelper->ModelicaError(message.c_str());
 	}
 	// check output size
 	if (m_nOutputEntries != outputLength) {
-		std::string message = Utils::string_format("SMArtInt: Wrong output length: in the interface were %i entries defined, whereas in current function call %i is specified!", m_nOutputEntries, outputLength);
+		std::string message = Utils::string_format("SMArtIInt: Wrong output length: in the interface were %i "
+                                                   "entries defined, whereas in current function call %i is specified!",
+                                                   m_nOutputEntries, outputLength);
 		mp_modelicaUtilityHelper->ModelicaError(message.c_str());
 	}
+    if (m_firstInvoke & !m_statesInitialized) {
+        // Initialize states if available
+        mp_timeStepMngmt->initialize(time);
+    }
 
     unsigned int nSteps = 0;
     try {
-        nSteps = mp_timeStepMngmt->manageNewStep(time, m_firstInvoke, input);
+        mp_timeStepMngmt->storeInputs(time, input);
+        nSteps = mp_timeStepMngmt->calculateNumberOfSteps(time, m_firstInvoke);
     } catch (std::exception& e) {
         mp_modelicaUtilityHelper->ModelicaError(e.what());
     }
@@ -213,6 +226,8 @@ void NeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int 
 
 	for (unsigned int i = 0; i < nSteps; ++i)
 	{
+        // for each intermediate step, call the methods handling the inputs: it will interpolate the inputs to the
+        // required grid time, and it will fill the tensors of the state inputs
 		double* inpInput = mp_timeStepMngmt->handleInpts(time, i, input, m_firstInvoke);
 
 		// we write the data directly into the data array of the tensor - the casting function is set to the correct
@@ -258,10 +273,11 @@ void NeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int 
 	mp_timeStepMngmt->updateFinishedStep(time, nSteps);
 }
 
-void NeuralNet::initializeStates(double* p_stateValues, const unsigned int& nStateValues)
+void NeuralNet::initializeStates(double time, double* p_stateValues, const unsigned int& nStateValues)
 {
+    m_statesInitialized = true;
 	try {
-		mp_timeStepMngmt->initialize(p_stateValues, nStateValues);
+		mp_timeStepMngmt->initialize(time, p_stateValues, nStateValues);
 	}
 	catch (const std::invalid_argument& e) {
 		mp_modelicaUtilityHelper->ModelicaError(e.what());
@@ -273,7 +289,7 @@ void NeuralNet::checkInputTensorSize()
 	if (mp_tfdll->tensorNumDims(mp_flatInputTensor) != m_inputDim)
 	{
 		std::string message = Utils::string_format(
-                "SMArtInt: Wrong input dimensions : the loaded model has %i dimensions whereas in the "
+                "SMArtIInt: Wrong input dimensions : the loaded model has %i dimensions whereas in the "
                 "interface %i is specified!", mp_tfdll->tensorNumDims(mp_flatInputTensor), m_inputDim);
 		mp_modelicaUtilityHelper->ModelicaError(message.c_str());
 	}
@@ -281,7 +297,7 @@ void NeuralNet::checkInputTensorSize()
 	for (int32_t i = 1; i < m_inputDim; ++i) {
 		if (mp_tfdll->tensorDim(mp_flatInputTensor, i) != int(mp_inputSizes[i]))
 		{
-			std::string message = "SMArtInt: Wrong input sizes. The loaded model has the sizes {";
+			std::string message = "SMArtIInt: Wrong input sizes. The loaded model has the sizes {";
 			for (int32_t j = 0; j < m_inputDim; ++j) {
 				message += Utils::string_format("%i", mp_tfdll->tensorDim(mp_flatInputTensor, j));
 				if (j < (m_inputDim - 1)) message += ", ";
@@ -302,13 +318,13 @@ void NeuralNet::checkOutputTensorSize(const TfLiteTensor* p_flatOutputTensor)
 	// check dimensions
 	if (mp_tfdll->tensorNumDims(p_flatOutputTensor) != m_outputDim)
 	{
-		std::string message = Utils::string_format("SMArtInt: Wrong output dimensions : the loaded model has %i dimensions whereas in the interface %i is specified!", mp_tfdll->tensorNumDims(p_flatOutputTensor), m_outputDim);
+		std::string message = Utils::string_format("SMArtIInt: Wrong output dimensions : the loaded model has %i dimensions whereas in the interface %i is specified!", mp_tfdll->tensorNumDims(p_flatOutputTensor), m_outputDim);
 		mp_modelicaUtilityHelper->ModelicaError(message.c_str());
 	}
 	for (int32_t i = 0; i < m_outputDim; ++i) {
 		if (mp_tfdll->tensorDim(p_flatOutputTensor, i) != int(mp_outputSizes[i]))
 		{
-			std::string message = "SMArtInt: Wrong output sizes. The loaded model has the sizes {";
+			std::string message = "SMArtIInt: Wrong output sizes. The loaded model has the sizes {";
 			for (int32_t j = 0; j < m_outputDim; ++j) {
 				message += Utils::string_format("%i", mp_tfdll->tensorDim(p_flatOutputTensor, j));
 				if (j < (m_outputDim - 1)) message += ", ";
@@ -331,7 +347,8 @@ void NeuralNet::setInputCastFunction(TfLiteTensor* tensor)
 		mfp_castInput = &Utils::castToFloat;
 		break;
 	default:
-		mp_modelicaUtilityHelper->ModelicaError("Could not convert input data - SMArtIInt currently only supports TFLite models using floats");
+		mp_modelicaUtilityHelper->ModelicaError("Could not convert input data - SMArtIInt currently only supports "
+                                                "TFLite models using floats");
 		break;
 	}
 }
@@ -345,7 +362,8 @@ void NeuralNet::setOutputCastFunction(const TfLiteTensor* tensor)
 		mfp_castOutput = &Utils::castFromFloat;
 		break;
 	default:
-		mp_modelicaUtilityHelper->ModelicaError("Could not convert output data - SMArtIInt currently only supports TFLite models using floats");
+		mp_modelicaUtilityHelper->ModelicaError("Could not convert output data - SMArtIInt currently only supports "
+                                                "TFLite models using floats");
 		break;
 	}
 }
