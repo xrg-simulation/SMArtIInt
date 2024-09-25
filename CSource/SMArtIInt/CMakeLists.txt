@@ -6,7 +6,7 @@ cmake_policy(SET CMP0091 NEW)
 ################################################################################
 set(Headerdateien
 		${CMAKE_CURRENT_SOURCE_DIR}/../External/tensorflow/tensorflow/lite/c/c_api.h
-		"InputManagement.h"
+		${CMAKE_CURRENT_SOURCE_DIR}/../External/onnx/onnxruntime/include/onnxruntime_cxx_api.h"InputManagement.h"
 		"InterfaceFunctions.h"
 		"NeuralNet.h"
 		"Utils.h"
@@ -53,8 +53,13 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../External/tensorflow/)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	target_link_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}//External")
-	target_link_libraries(${PROJECT_NAME} "libtensorflowlite_c.so")
+	target_link_libraries(${PROJECT_NAME} "libonnxruntime.so")
 	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath=$ORIGIN")
-else ()
 
+else ()
+	set(ADDITIONAL_LIBRARY_DEPENDENCIES "onnxruntime_c")
+	target_link_libraries(${PROJECT_NAME} PUBLIC "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
+	target_link_directories(${PROJECT_NAME} PUBLIC
+			"${CMAKE_CURRENT_SOURCE_DIR}//External"
+	)
 endif()

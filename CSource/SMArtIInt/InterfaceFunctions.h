@@ -21,7 +21,7 @@
 extern "C" {
 #endif  // __cplusplus
 
-	EXPORT void* NeuralNet_createObject(void* modelicaUtilityHelper, const char* tfLiteModelPath, unsigned int dymInputDim, unsigned int* p_dymInputSizes, unsigned int dymOutputDim, unsigned int* p_dymOutputSizes, bool stateful, double fixStep);
+	EXPORT void* NeuralNet_createObject(void* modelicaUtilityHelper, const char* ModelPath, unsigned int dymInputDim, unsigned int* p_dymInputSizes, unsigned int dymOutputDim, unsigned int* p_dymOutputSizes, bool stateful, double fixStep);
 
 	EXPORT void NeuralNet_destroyObject(void* externalObject);
 

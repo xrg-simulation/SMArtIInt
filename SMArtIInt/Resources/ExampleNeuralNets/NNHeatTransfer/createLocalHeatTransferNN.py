@@ -243,3 +243,10 @@ converter = tf.lite.TFLiteConverter.from_keras_model(model)
 tflite_model = converter.convert()
 with open(os.path.join(path, "model.tflite"), 'wb') as f:
     f.write(tflite_model)
+
+### --------- Export To ONNX ------------------------------
+model.summary()
+model.save("savedmodel")
+model.save("savedmodel.h5")
+
+os.system("python -m tf2onnx.convert --saved-model savedmodel --output model.onnx --opset 13")

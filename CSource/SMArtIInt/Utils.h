@@ -5,7 +5,7 @@
 #include "TensorflowDllHandler.h"
 #include <vector>
 #include <memory>
-
+#include "../External/onnx/onnxruntime/include/onnxruntime_cxx_api.h"
 
 namespace Utils
 {
@@ -22,6 +22,7 @@ namespace Utils
 
 	int compareTensorSizes(const TfLiteTensor* A, const TfLiteTensor* B, unsigned int* unmatchedVals,
                            TensorflowDllHandler* p_tfDll);
+    int compareTensorSizes(Ort::Value* A, Ort::Value* B, unsigned int* unmatchedVals);
 
 	int getNumElementsTensor(const TfLiteTensor* A,
                              TensorflowDllHandler* p_tfDll);
@@ -52,6 +53,10 @@ namespace Utils
             m_stateDataByteSizes.push_back(byte_size);
 			m_stateStorage.push_back(operator new(byte_size));
 		}
+        void addStateInput(Ort::Value* stateInpTensor) {
+            m_stateDataByteSizes.push_back(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementCount() * sizeof(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementType()));
+            m_stateStorage.push_back(operator new(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementCount() * sizeof(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementType())));
+        }
 
 		void* at(unsigned int i) {
 			return m_stateStorage[i];

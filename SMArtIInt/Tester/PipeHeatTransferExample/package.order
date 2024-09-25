@@ -1,7 +1,3 @@
-PipeLocalHeatTransfer
-PipeLocalHeatTransfer_smallNN
-NNHeatTransfer
-TestModelEvaluation
-TestModelEvaluation_Ref
-TestPipe
-TestPipeRef
+ReferenceModels
+TFLite
+ONNX

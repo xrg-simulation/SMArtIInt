@@ -44,6 +44,17 @@ bool InputManagement::addStateInp(TfLiteTensor* stateInpTensor)
 	return true;
 }
 
+bool InputManagement::addStateInp(Ort::Value* stateInpTensor)
+{
+    m_nStateArr += 1;
+    for (unsigned int i = 0; i < m_nStoredSteps; ++i) {
+        m_stateBuffer.getElement(i)->addStateInput(stateInpTensor);
+    }
+    mp_OnnxStateInpTensors.push_back(stateInpTensor);
+    m_nStateValues += stateInpTensor->GetTensorTypeAndShapeInfo().GetElementCount();
+    return true;
+}
+
 bool InputManagement::addStateOut(const TfLiteTensor* stateOutTensor)
 {
 	size_t i = mp_stateOutTensors.size();
@@ -73,6 +84,40 @@ bool InputManagement::addStateOut(const TfLiteTensor* stateOutTensor)
 	}
 	//ToDo check type (and sizes??)
 	return true;
+}
+
+bool InputManagement::addStateOut(Ort::Value* stateOutTensor)
+{
+    size_t i = mp_stateOutTensors.size();
+    if (i < m_nStateArr) {
+        mp_OnnxStateOutTensors.push_back(stateOutTensor);
+        unsigned int unmatchedVals[2];
+        int ret = Utils::compareTensorSizes(mp_OnnxStateInpTensors[i], mp_OnnxStateOutTensors[i], unmatchedVals);
+        if (ret < 0) {
+            throw std::invalid_argument(Utils::string_format("Unmatched number of dimension for state input and output # %i"
+                                                             " (Input has %i dimensions whereas output has %i dimensions)!", i, unmatchedVals[0], unmatchedVals[1]));
+            return false;
+        }
+        else if (ret > 0) {
+            throw std::invalid_argument(Utils::string_format("Unmatched number of sizes for state input and output # %i in dimension %i "
+                                                             "(Input has %i entries whereas output has %i entries)!"
+                    , i, ret, unmatchedVals[0], unmatchedVals[1]));
+            return false;
+        }
+    }
+    else {
+        // Error
+        throw std::invalid_argument(Utils::string_format("SMArtInt can only handle states in stateful=True if state inputs and state outputs are matching!"));
+        return false;
+    }
+    //ToDo check type (and sizes??)
+    return true;
+}
+
+bool InputManagement::updateStateOut(Ort::Value* stateOutTensor)
+{
+    mp_OnnxStateOutTensors.push_back(stateOutTensor);
+    return true;
 }
 
 double* InputManagement::handleInpts(double time, unsigned int iStep, double* flatInp, bool firstInvoke)
@@ -108,16 +153,28 @@ double* InputManagement::handleInpts(double time, unsigned int iStep, double* fl
             // the state buffer is filled after a successful step, so we have to take the current value
 			Utils::stateInputsContainer* stateInputs = m_stateBuffer.getCurrentValue();
 			for (unsigned int i = 0; i < m_nStateArr; ++i) {
-				std::memcpy(mp_tfDll->tensorData(mp_stateInpTensors[i]), stateInputs->at(i),
+                if (size(mp_stateInpTensors) > 0) {
+                    std::memcpy(mp_tfDll->tensorData(mp_stateInpTensors[i]), stateInputs->at(i),
+                                stateInputs->byteSizeAt(i));
+                }
+                else if (size(mp_OnnxStateInpTensors) > 0){
+                    std::memcpy(mp_OnnxStateInpTensors[i]->GetTensorMutableRawData(), stateInputs->at(i),
                             stateInputs->byteSizeAt(i));
-			}
+                }
+            }
 		}
 		else {
 			// copy state output to input
 			for (unsigned int i = 0; i < m_nStateArr; ++i) {
-				std::memcpy(mp_tfDll->tensorData(mp_stateInpTensors[i]),
+                if (size(mp_stateInpTensors) > 0) {
+                    std::memcpy(mp_tfDll->tensorData(mp_stateInpTensors[i]),
                             mp_tfDll->tensorData(mp_stateOutTensors[i]),
                             mp_tfDll->tensorByteSize(mp_stateOutTensors[i]));
+                }
+                else if (size(mp_OnnxStateInpTensors) > 0) {
+                    std::memcpy(mp_OnnxStateInpTensors[i]->GetTensorMutableRawData(), mp_OnnxStateOutTensors[i]->GetTensorMutableRawData(),
+                                sizeof(mp_OnnxStateOutTensors[i]->GetTensorTypeAndShapeInfo().GetElementType()) * mp_OnnxStateOutTensors[i]->GetTensorTypeAndShapeInfo().GetElementCount());
+                }
 			}
 		}
 		input_pointer = mp_flatInterpolatedInp;
@@ -125,6 +182,7 @@ double* InputManagement::handleInpts(double time, unsigned int iStep, double* fl
 	else {
 		input_pointer = flatInp;
 	}
+
 	return input_pointer;
 }
 
@@ -174,6 +232,11 @@ bool InputManagement::updateFinishedStep(double time, unsigned int nSteps)
         }
         m_stateBuffer.store(time, test);
 	}
+    //todo merge
+    auto test = mp_OnnxStateOutTensors[i]->GetTensorTypeAndShapeInfo();
+    std::memcpy(m_stateBuffer.getCurrentValue()->at(i), mp_OnnxStateOutTensors[i]->GetTensorMutableRawData(),
+                m_stateBuffer.getCurrentValue()->byteSizeAt(i));
+
 	return true;
 }
 
@@ -222,8 +285,31 @@ void InputManagement::initialize(double time, double* p_stateValues, const unsig
 		}
 		counter += 1;
 	}
+
+    //ToDo Merge:
+    else if (size(mp_OnnxStateInpTensors) > 0) {
+        void (*castFunc)(const double &, void *, unsigned int);
+        switch (mp_OnnxStateInpTensors[iInput]->GetTensorTypeAndShapeInfo().GetElementType()) {
+            case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:
+                castFunc = &Utils::castToFloat;
+                break;
+            default:
+                throw std::invalid_argument(
+                        "Could not convert state data - SMArtIInt currently only supports ONNX models using floats)!");
+                break;
+        }
+
+        void *p_data = m_stateBuffer.getPrevValue()->at(iInput);
+
+        unsigned int n = mp_OnnxStateInpTensors[iInput]->GetTensorTypeAndShapeInfo().GetElementCount();
+
+        for (unsigned int i = 0; i < n; ++i) {
+            castFunc(0.0, p_data, i);
+        }
+    }
+
+
+
     m_stateBuffer.store(time, test);
 }
-
-
 

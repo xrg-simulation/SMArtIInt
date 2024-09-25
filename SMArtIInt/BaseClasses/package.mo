@@ -12,6 +12,6 @@ annotation (Documentation(info="<html>
 <li>Parametrize the model (provide path, number of in- and outputs, etc.)</li>
 <li>Define the interface and connect the in- and outputs of the blocks. The arrays have the same structure as those in TensorFlow: the inputs have to be connected in the same manner as they are used in the neural network during training.</li>
 </ol>
-<p><br>The examples <a href=\"modelica://SMArtIInt.Tester.PipeHeatTransferExample.PipeLocalHeatTransfer_smallNN\">PipeLocalHeatTransfer_smallNN</a> and <a href=\"modelica://SMArtIInt.Tester.ExamplePI.TF_PI_Stateful\">TF_PI_Stateful</a> uses this approach to create a model.</p>
+<p><br>The examples <a href=\"modelica://SMArtIInt.Tester.PipeHeatTransferExample.TFLite.PipeLocalHeatTransfer_smallNN\">PipeLocalHeatTransfer_smallNN</a> and <a href=\"modelica://SMArtIInt.Tester.ExamplePI.TF_PI_Stateful\">TF_PI_Stateful</a> uses this approach to create a model.</p>
 </html>"));
 end BaseClasses;
