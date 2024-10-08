@@ -1,5 +1,7 @@
 
 #include "NeuralNet.h"
+#include <iostream>
+#include "tensorflow/lite/c/c_api.h"
 #include "Utils.h"
 #include <stdexcept>
 #include <cstdlib>
@@ -68,20 +70,6 @@ NeuralNet::NeuralNet(ModelicaUtilityHelper* p_modelicaUtilityHelper, const char*
         mp_modelicaUtilityHelper->ModelicaError("A stateful RNN is used with a samplePeriod less or equal than 0. "
                                                 "Please enter the grid interval used to train the model as samplePeriod!");
     }
-
-
-#ifdef _WIN32
-    std::string tensorflowDllPath = Utils::getTensorflowDllPathWin();
-    mp_tfdll = new TensorflowDllHandlerWin(tensorflowDllPath.c_str());
-#else
-    std::string tensorflowDllPath = Utils::getTensorflowDllPathLinux();
-        mp_tfdll = new TensorflowDllHandlerLinux(tensorflowDllPath.c_str());
-#endif
-
-    mp_timeStepMngmt = new InputManagement(stateful, fixInterval, m_nInputEntries, mp_tfdll);
-
-	// perform steps to create model
-	loadAndInit(tfLiteModelPath);
 }
 
 NeuralNet::~NeuralNet()
@@ -96,9 +84,6 @@ NeuralNet::~NeuralNet()
 	mp_outputSizes = nullptr;
 	m_outputDim = 0;
 	m_nOutputEntries = 0;
-
-	// clean up time step manager
-	if (mp_timeStepMngmt) delete mp_timeStepMngmt;
 }
 
 // TfLite
@@ -109,15 +94,28 @@ TfLiteNeuralNet::TfLiteNeuralNet(ModelicaUtilityHelper *p_modelicaUtilityHelper,
         p_modelicaUtilityHelper, tfLiteModelPath,
         dymInputDim, p_dymInputSizes, dymOutputDim, p_dymOutputSizes,
         stateful, fixInterval) {
+
+#ifdef _WIN32
+    std::string tensorflowDllPath = Utils::getTensorflowDllPathWin();
+    mp_tfdll = new TensorflowDllHandlerWin(tensorflowDllPath.c_str());
+#else
+    std::string tensorflowDllPath = Utils::getTensorflowDllPathLinux();
+        mp_tfdll = new TensorflowDllHandlerLinux(tensorflowDllPath.c_str());
+#endif
+    mp_timeStepMngmt = new InputManagementTF(stateful, fixInterval, m_nInputEntries, mp_tfdll);
+
     // perform steps to create model
     TfLiteNeuralNet::loadAndInit(tfLiteModelPath);
+
 }
 
 TfLiteNeuralNet::~TfLiteNeuralNet() {
     // clean up allocated tflite stuff
-	if (mp_interpreter) TfLiteInterpreterDelete(mp_interpreter);
-	if (mp_options) TfLiteInterpreterOptionsDelete(mp_options);
-	if (mp_model) TfLiteModelDelete(mp_model);
+	if (mp_interpreter) mp_tfdll->interpreterDelete(mp_interpreter);
+	if (mp_options) mp_tfdll->interpreterOptionsDelete(mp_options);
+	if (mp_model) mp_tfdll->modelDelete(mp_model);
+    // clean up time step manager
+    delete mp_timeStepMngmt;
 }
 
 void TfLiteNeuralNet::loadAndInit(const char* tfliteModelPath)
@@ -211,8 +209,6 @@ void TfLiteNeuralNet::loadAndInit(const char* tfliteModelPath)
 	// dimensions etc of output tensor is only available after calling invoke so we check the infos after
 	// the call - that it is only done once use the following variable
 	m_firstInvoke = true;
-
-	return;
 }
 
 void TfLiteNeuralNet::runInferenceFlatTensor(double time, double* input, unsigned int inputLength, double* output,
@@ -234,7 +230,8 @@ void TfLiteNeuralNet::runInferenceFlatTensor(double time, double* input, unsigne
 	}
     if (m_firstInvoke & !m_statesInitialized) {
         // Initialize states if available
-        mp_timeStepMngmt->initialize(time);
+        mp_timeStepMngmt->InputManagement::initialize(time);
+        m_statesInitialized = true;
     }
 
     unsigned int nSteps = 0;
@@ -277,7 +274,9 @@ void TfLiteNeuralNet::runInferenceFlatTensor(double time, double* input, unsigne
 		// handle additional outputs for states
 		for (int i = 1; i < mp_tfdll->interpreterGetOutputTensorCount(mp_interpreter); ++i) {
 			try {
-				mp_timeStepMngmt->addStateOut(mp_tfdll->interpreterGetOutputTensor(mp_interpreter, i));
+				mp_timeStepMngmt->addStateOut(
+                        mp_tfdll->interpreterGetOutputTensor(mp_interpreter, i)
+                        );
 			}
 			catch (const std::invalid_argument& e) {
 				mp_modelicaUtilityHelper->ModelicaError(e.what());
@@ -293,7 +292,7 @@ void TfLiteNeuralNet::runInferenceFlatTensor(double time, double* input, unsigne
 		mfp_castOutput(output[i], p_data, i);
 	}
 
-	mp_timeStepMngmt->updateFinishedStep(time, nSteps);
+    mp_timeStepMngmt->updateFinishedStep(nSteps);
 }
 
 void TfLiteNeuralNet::initializeStates(double time, double* p_stateValues, const unsigned int& nStateValues)
@@ -309,7 +308,7 @@ void TfLiteNeuralNet::initializeStates(double time, double* p_stateValues, const
 
 void TfLiteNeuralNet::setInputCastFunction(TfLiteTensor* tensor)
 {
-	switch (TfLiteTensorType(tensor)) {
+	switch (mp_tfdll->tensorType(tensor)) {
 	case kTfLiteFloat32:
 		mfp_castInput = &Utils::castToFloat;
 		break;
@@ -321,9 +320,7 @@ void TfLiteNeuralNet::setInputCastFunction(TfLiteTensor* tensor)
 
 void TfLiteNeuralNet::setOutputCastFunction(const TfLiteTensor* tensor)
 {
-	switch (TfLiteTensorType(tensor))
-	{
-
+	switch (mp_tfdll->tensorType(tensor)) {
 	case kTfLiteFloat32:
 		mfp_castOutput = &Utils::castFromFloat;
 		break;
@@ -396,6 +393,9 @@ OnnxNeuralNet::OnnxNeuralNet(ModelicaUtilityHelper *p_modelicaUtilityHelper, con
         p_modelicaUtilityHelper, onnxModelPath,
         dymInputDim, p_dymInputSizes, dymOutputDim, p_dymOutputSizes,
         stateful, fixInterval) {
+
+    mp_timeStepMngmt = new InputManagementONNX(stateful, fixInterval, m_nInputEntries);
+
     // perform steps to create model
     OnnxNeuralNet::loadAndInit(onnxModelPath);
 }
@@ -406,6 +406,8 @@ OnnxNeuralNet::~OnnxNeuralNet() {
 	if (mp_model) delete(mp_model);
     if (input_data) delete(input_data);
     if (tensorData) delete(tensorData);
+    // clean up time step manager
+    delete mp_timeStepMngmt;
 }
 
 void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
@@ -414,9 +416,9 @@ void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
 
     mp_model = new Ort::Env(ORT_LOGGING_LEVEL_WARNING, "test_onnx");
     if (!mp_model) {
-        std::string message = Utils::string_format("SMArtInt: Model not found - check path: %s", m_onnxModelPath);
+        std::string message = Utils::string_format("SMArtIInt: Model not found - check path: %s", m_onnxModelPath);
         mp_modelicaUtilityHelper->ModelicaError(message.c_str());
-    };
+    }
     #ifdef _MSC_VER
     // convert const char* in wchar_t*
     size_t length = 0;
@@ -465,7 +467,7 @@ void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
                    [&](const std::string &str) { return str.c_str(); });
 
     if (mp_session->GetInputCount() != 1 && !mp_timeStepMngmt->isActive()) {
-        mp_modelicaUtilityHelper->ModelicaError("SMArtInt can only handle models with single input");
+        mp_modelicaUtilityHelper->ModelicaError("SMArtIInt can only handle models with single input");
     }
 
     // adjust first dimension which is batch size if batch size is dynamic
@@ -474,7 +476,7 @@ void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
 
     // ToDo Adjusting Batchsize for stateful models: every input and output (state in- and outputs) needed to be adjusted with an batchsize
     if (m_input_shapes[0] != mp_inputSizes[0]){
-        std::string message = "SMArtInt: Adjust first dimension from " + Utils::string_format("%i", m_input_shapes[0]) + " to batch size " + Utils::string_format("%i\n", mp_inputSizes[0]);
+        std::string message = "SMArtIInt: Adjust first dimension from " + Utils::string_format("%i", m_input_shapes[0]) + " to batch size " + Utils::string_format("%i\n", mp_inputSizes[0]);
         mp_modelicaUtilityHelper->ModelicaMessage(message.c_str());
 
         m_input_shapes[0] = mp_inputSizes[0]; //1
@@ -489,11 +491,11 @@ void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
     if (mp_session->GetOutputCount() != 1) {
         if (mp_timeStepMngmt->isActive()) {
             if (mp_session->GetOutputCount() != mp_session->GetInputCount()) {
-                mp_modelicaUtilityHelper->ModelicaError("SMArtInt: Stateful handling can only be done if model has the same number of inputs (=) and outputs");
+                mp_modelicaUtilityHelper->ModelicaError("SMArtIInt: Stateful handling can only be done if model has the same number of inputs (=) and outputs");
             }
         }
         else {
-            mp_modelicaUtilityHelper->ModelicaError("SMArtInt can only handle models with single output!");
+            mp_modelicaUtilityHelper->ModelicaError("SMArtIInt can only handle models with single output!");
         }
     }
 
@@ -520,12 +522,8 @@ void OnnxNeuralNet::loadAndInit(const char* onnxModelPath)
                 mp_modelicaUtilityHelper->ModelicaError(e.what());
             }
         }
-        // Initialize states if available
-        mp_timeStepMngmt->initialize();
     }
     input_data = new std::vector<float>(m_nInputEntries);
-
-    return;
 }
 
 std::string OnnxNeuralNet::print_shape(const std::vector<std::int64_t>& v) {
@@ -539,18 +537,26 @@ void OnnxNeuralNet::runInferenceFlatTensor(double time, double* input, unsigned 
 {
     // check the sizes
     if (m_nInputEntries != inputLength) {
-        std::string message = Utils::string_format("SMArtInt: Wrong input length: in the interface were %i entries defined, whereas in current function call %i is specified!", m_nInputEntries, inputLength);
+        std::string message = Utils::string_format("SMArtIInt: Wrong input length: in the interface were %i entries defined, whereas in current function call %i is specified!", m_nInputEntries, inputLength);
         mp_modelicaUtilityHelper->ModelicaError(message.c_str());
-    };
+    }
     // check output size
     if (m_nOutputEntries != outputLength) {
-        std::string message = Utils::string_format("SMArtInt: Wrong output length: in the interface were %i entries defined, whereas in current function call %i is specified!", m_nOutputEntries, outputLength);
+        std::string message = Utils::string_format("SMArtIInt: Wrong output length: in the interface were %i entries defined, whereas in current function call %i is specified!", m_nOutputEntries, outputLength);
         mp_modelicaUtilityHelper->ModelicaError(message.c_str());
-    };
+    }
+
+    if (m_firstInvoke & !m_statesInitialized) {
+        // Initialize states if available
+        mp_timeStepMngmt->InputManagement::initialize(time);
+        m_statesInitialized = true;
+    }
+
     static std::vector<float> result;
     unsigned int nSteps = 0;
     try {
-        nSteps = mp_timeStepMngmt->manageNewStep(time, m_firstInvoke, input);
+        mp_timeStepMngmt->storeInputs(time, input);
+        nSteps = mp_timeStepMngmt->calculateNumberOfSteps(time, m_firstInvoke);
     } catch (std::exception& e) {
         mp_modelicaUtilityHelper->ModelicaError(e.what());
     }
@@ -610,7 +616,7 @@ void OnnxNeuralNet::runInferenceFlatTensor(double time, double* input, unsigned 
             std::string message = "ERROR running model inference: " + std::string(exception.what()) + "\n";
             mp_modelicaUtilityHelper->ModelicaError(message.c_str());
             exit(-1);
-        };
+        }
         if (stateInputs1) delete(stateInputs1);
     }
 
@@ -618,15 +624,14 @@ void OnnxNeuralNet::runInferenceFlatTensor(double time, double* input, unsigned 
         output[j] = static_cast<double>(result[j]);
     }
 
-    mp_timeStepMngmt->updateFinishedStep(time, nSteps);
+    mp_timeStepMngmt->updateFinishedStep(nSteps);
 
-    return;
 }
 
-void OnnxNeuralNet::initializeStates(double* p_stateValues, const unsigned int& nStateValues)
+void OnnxNeuralNet::initializeStates(double time, double* p_stateValues, const unsigned int& nStateValues)
 {
     try {
-        mp_timeStepMngmt->initialize(p_stateValues, nStateValues);
+        mp_timeStepMngmt->initialize(time, p_stateValues, nStateValues);
     }
     catch (const std::invalid_argument& e) {
         mp_modelicaUtilityHelper->ModelicaError(e.what());
@@ -637,14 +642,14 @@ void OnnxNeuralNet::checkInputTensorSize()
 {
     if (mp_session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetDimensionsCount() != m_inputDim)
     {
-        std::string message = Utils::string_format("SMArtInt: Wrong input dimensions : the loaded model has %i dimensions whereas in the interface %i is specified!", mp_session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetDimensionsCount(), m_inputDim);
+        std::string message = Utils::string_format("SMArtIInt: Wrong input dimensions : the loaded model has %i dimensions whereas in the interface %i is specified!", mp_session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetDimensionsCount(), m_inputDim);
         mp_modelicaUtilityHelper->ModelicaError(message.c_str());
     }
     // check the sizes in each dimension except for the first which is the batch size
     for (unsigned int i = 1; i < m_inputDim; ++i) {
         if (mp_session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[i] != int(mp_inputSizes[i]))
         {
-            std::string message = "SMArtInt: Wrong input sizes. The loaded model has the sizes {";
+            std::string message = "SMArtIInt: Wrong input sizes. The loaded model has the sizes {";
             for (unsigned int j = 0; j < m_inputDim; ++j) {
                 message += Utils::string_format("%i", abs(mp_session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[j]));
                 if (j < (m_inputDim - 1)) message += ", ";
@@ -665,16 +670,16 @@ void OnnxNeuralNet::checkOutputTensorSize()
     // check dimensions
     if (mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetDimensionsCount() != m_outputDim)
     {
-        std::string message = Utils::string_format("SMArtInt: Wrong output dimensions : the loaded model has %i dimensions whereas in the interface %i is specified!", mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetDimensionsCount(), m_outputDim);
+        std::string message = Utils::string_format("SMArtIInt: Wrong output dimensions : the loaded model has %i dimensions whereas in the interface %i is specified!", mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetDimensionsCount(), m_outputDim);
         mp_modelicaUtilityHelper->ModelicaError(message.c_str());
     }
     for (unsigned int i = 0; i < m_outputDim; ++i) {
         if (i == 0 && mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[i] == -1){
-            ;
+
         }
         else if (abs(mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[i]) != int(mp_outputSizes[i]))
         {
-            std::string message = "SMArtInt: Wrong output sizes. The loaded model has the sizes {";
+            std::string message = "SMArtIInt: Wrong output sizes. The loaded model has the sizes {";
             for (unsigned int j = 0; j < m_outputDim; ++j) {
                 message += Utils::string_format("%i", abs(mp_session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape()[j])); // abs for not defined batch size (-1)
                 if (j < (m_outputDim - 1)) message += ", ";

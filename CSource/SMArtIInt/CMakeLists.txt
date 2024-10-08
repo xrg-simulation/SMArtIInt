@@ -6,7 +6,10 @@ cmake_policy(SET CMP0091 NEW)
 ################################################################################
 set(Headerdateien
 		${CMAKE_CURRENT_SOURCE_DIR}/../External/tensorflow/tensorflow/lite/c/c_api.h
-		${CMAKE_CURRENT_SOURCE_DIR}/../External/onnx/onnxruntime/include/onnxruntime_cxx_api.h"InputManagement.h"
+		${CMAKE_CURRENT_SOURCE_DIR}/../External/onnx/onnxruntime/include/onnxruntime_cxx_api.h
+		"InputManagement.h"
+		"InputManagementONNX.h"
+		"InputManagementTF.h"
 		"InterfaceFunctions.h"
 		"NeuralNet.h"
 		"Utils.h"
@@ -22,6 +25,8 @@ source_group("Headerdateien" FILES ${Headerdateien})
 
 set(Quelldateien
     "InputManagement.cpp"
+	"InputManagementONNX.cpp"
+	"InputManagementTF.cpp"
     "InterfaceFunctions.cpp"
     "NeuralNet.cpp"
     "Utils.cpp"

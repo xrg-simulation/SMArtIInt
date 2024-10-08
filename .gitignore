@@ -21,9 +21,4 @@ SMArtIInt/Resources/ExampleNeuralNets/PIController/savedmodel*
 
 _dymWork/*
 _deploy/*
-_cmake/*
-cmake_debug_vs
-cmake_debug
-cmake_debug_wsl
-cmake_release_vs
-cmake_release_wsl
+_cmake*

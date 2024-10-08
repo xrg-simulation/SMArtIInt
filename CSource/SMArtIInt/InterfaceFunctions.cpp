@@ -1,6 +1,5 @@
 #include "InterfaceFunctions.h"
 #include "NeuralNet.h"
-#include "../../SMArtIInt/Resources/Include/ModelicaUtilityHelper.h"
 #include <filesystem>
 #include <variant>
 
@@ -19,7 +18,7 @@ void* NeuralNet_createObject(void* modelicaUtilityHelper, const char* ModelPath,
         if (fs::is_regular_file(file_path)) {
             std::string extension = file_path.extension().string();
             if (extension == ".tflite") {
-                std::string message = Utils::string_format("SMArtInt: TF-Lite Model recognized  - at path: %s\n",
+                std::string message = Utils::string_format("SMArtIInt: TF-Lite Model recognized  - at path: %s\n",
                                                            ModelPath);
                 p_modelicaUtilityHelper->ModelicaMessage(message.c_str());
                 // create TfLiteNeuralNet pointer
@@ -30,7 +29,7 @@ void* NeuralNet_createObject(void* modelicaUtilityHelper, const char* ModelPath,
                 return (void *) p_neuralNet;
 
             } else if (extension == ".onnx") {
-                std::string message = Utils::string_format("SMArtInt: ONNX Model recognized  - at path: %s\n",
+                std::string message = Utils::string_format("SMArtIInt: ONNX Model recognized  - at path: %s\n",
                                                            ModelPath);
                 p_modelicaUtilityHelper->ModelicaMessage(message.c_str());
                 // to be added later!
@@ -40,7 +39,7 @@ void* NeuralNet_createObject(void* modelicaUtilityHelper, const char* ModelPath,
                 p_neuralNet->printType();
                 return (void *) p_neuralNet;
             } else {
-                std::string message = Utils::string_format("SMArtInt: No known model type recognized  - at path: %s\n",
+                std::string message = Utils::string_format("SMArtIInt: No known model type recognized  - at path: %s\n",
                                                            ModelPath);
                 p_modelicaUtilityHelper->ModelicaError(message.c_str());
                 return nullptr;
@@ -48,7 +47,7 @@ void* NeuralNet_createObject(void* modelicaUtilityHelper, const char* ModelPath,
             }
         }
     }
-    std::string message = Utils::string_format("SMArtInt: Path to model is not correct: %s\n", ModelPath);
+    std::string message = Utils::string_format("SMArtIInt: Path to model is not correct: %s\n", ModelPath);
     p_modelicaUtilityHelper->ModelicaError(message.c_str());
     return nullptr;
 }
@@ -99,7 +98,7 @@ void NeuralNet_initializeStates(void* externalObject, double time,  double* stat
     if(p_neuralNet)
     {
         // initialize states
-        p_neuralNet->initializeStates(states, nStateValues);
+        p_neuralNet->initializeStates(time, states, nStateValues);
     }
     else
     {
@@ -107,7 +106,7 @@ void NeuralNet_initializeStates(void* externalObject, double time,  double* stat
         if(p_neuralNet)
         {
             // initialize states
-            p_neuralNet->initializeStates(states, nStateValues);
+            p_neuralNet->initializeStates(time, states, nStateValues);
         }
     }
 }

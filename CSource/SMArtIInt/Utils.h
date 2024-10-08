@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <cstdio>
 #include <iostream>
 #include "tensorflow/lite/c/c_api.h"
 #include "TensorflowDllHandler.h"
@@ -39,10 +40,10 @@ namespace Utils
 
 	void castFromFloat(double& value, void* p_store, unsigned int pos);
 
-	class stateInputsContainer
+	class StateInputsContainer
 	{
 	public:
-		~stateInputsContainer() {
+		~StateInputsContainer() {
 			for (auto& stateStorage : m_stateStorage) {
 				if (stateStorage) operator delete(stateStorage);
 			}
@@ -53,9 +54,12 @@ namespace Utils
             m_stateDataByteSizes.push_back(byte_size);
 			m_stateStorage.push_back(operator new(byte_size));
 		}
+
         void addStateInput(Ort::Value* stateInpTensor) {
-            m_stateDataByteSizes.push_back(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementCount() * sizeof(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementType()));
-            m_stateStorage.push_back(operator new(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementCount() * sizeof(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementType())));
+            m_stateDataByteSizes.push_back(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementCount() * \
+                sizeof(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementType()));
+            m_stateStorage.push_back(operator new(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementCount() * \
+                sizeof(stateInpTensor->GetTensorTypeAndShapeInfo().GetElementType())));
         }
 
 		void* at(unsigned int i) {

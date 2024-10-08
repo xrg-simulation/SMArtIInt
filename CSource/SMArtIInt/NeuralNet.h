@@ -5,7 +5,8 @@
 #include "tensorflow/lite/c/common.h"
 #include "../../SMArtIInt/Resources/Include/ModelicaUtilityHelper.h"
 #include "tensorflow/lite/c/c_api.h"
-#include "InputManagement.h"
+#include "InputManagementTF.h"
+#include "InputManagementONNX.h"
 #include <cstring>
 
 class NeuralNet
@@ -18,17 +19,13 @@ public:
 	~NeuralNet();
 
     virtual void printType() {
-        std::string message = Utils::string_format("\nSMArtInt: Type is %s\n", "BaseClass");
+        std::string message = Utils::string_format("\nSMArtIInt: Type is %s\n", "BaseClass");
         mp_modelicaUtilityHelper->ModelicaMessage(message.c_str());
         }
 
 protected:
 
-    TensorflowDllHandler* mp_tfdll;
-
 	ModelicaUtilityHelper* mp_modelicaUtilityHelper; // attribute to access dymola utility functions
-
-	InputManagement* mp_timeStepMngmt; // time step manager used for stateful RNNs
 
 	// in and output
 	int32_t m_inputDim = 0; // dimension of input as specified in modelica
@@ -57,7 +54,7 @@ public:
     void initializeStates(double time, double* p_stateValues, const unsigned int& nStateValues); // function to intialize states with given values
 
     void printType() override{
-        std::string message = Utils::string_format("\nSMArtInt: Type is %s\n", m_modelType);
+        std::string message = Utils::string_format("\nSMArtIInt: Type is %s\n", m_modelType);
         mp_modelicaUtilityHelper->ModelicaMessage(message.c_str());
     };
     const char* m_modelType = "TfLite";
@@ -65,6 +62,10 @@ public:
     void loadAndInit(const char* tfliteModelPath);
 
 private:
+    TensorflowDllHandler* mp_tfdll;
+
+    InputManagementTF* mp_timeStepMngmt; // time step manager used for stateful RNNs
+
     const char* m_tfliteModelPath = ""; // path of the model
 
     TfLiteModel* mp_model = nullptr; // pointer to model
@@ -96,16 +97,18 @@ public:
 
     void runInferenceFlatTensor(double time, double* input, unsigned int inputLength, double* output, unsigned int outputLength); // invoke the model
 
-    void initializeStates(double* p_stateValues, const unsigned int& nStateValues); // function to intialize states with given values
+    void initializeStates(double time, double* p_stateValues, const unsigned int& nStateValues); // function to intialize states with given values
 
     void printType() override{
-        std::string message = Utils::string_format("\nSMArtInt: Type is %s\n", m_modelType);
+        std::string message = Utils::string_format("\nSMArtIInt: Type is %s\n", m_modelType);
         mp_modelicaUtilityHelper->ModelicaMessage(message.c_str());
     };
     const char* m_modelType = "ONNX";
 
 private:
     const char* m_onnxModelPath = ""; // path of the model
+
+    InputManagementONNX* mp_timeStepMngmt; // time step manager used for stateful RNNs
 
     Ort::Env* mp_model; // pointer to model
     Ort::SessionOptions mp_options; // pointer to model options
