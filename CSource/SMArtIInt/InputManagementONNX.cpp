@@ -158,5 +158,6 @@ void InputManagementONNX::initialize(double time, double* p_stateValues, const u
         }
         counter += 1;
     }
-    m_stateBuffer.store(time, test);
+//m_stateBuffer.store(time, test);
+    m_stateBuffer.initialize(test);
 }
