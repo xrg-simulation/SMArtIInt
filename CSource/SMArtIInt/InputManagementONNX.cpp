@@ -73,8 +73,10 @@ double* InputManagementONNX::handleInpts(double time, unsigned int iStep, double
         // Handling of the state inputs
         if (iStep == 0) {
             // initialize states with results from previously accepted step (take it from buffer)
-            // the state buffer is filled after a successful step, so we have to take the current value
-            Utils::StateInputsContainer* stateInputs = m_stateBuffer.getCurrentValue();
+            // previously an empty entry is created in the state buffer - this point here will be called multiple times
+            // when iterating the current step: in order to use the value of the previous accepted step we will create
+            // the empty entry first and use the previous value
+            Utils::StateInputsContainer* stateInputs = m_stateBuffer.getPrevValue();
             for (unsigned int i = 0; i < m_nStateArr; ++i) {
                 std::memcpy(mp_OnnxStateInpTensors[i]->GetTensorMutableRawData(), stateInputs->at(i),
                             stateInputs->byteSizeAt(i));
