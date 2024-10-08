@@ -8,8 +8,7 @@
 #include <memory>
 #include "../External/onnx/onnxruntime/include/onnxruntime_cxx_api.h"
 
-namespace Utils
-{
+namespace Utils {
 	// function to format messages to modelica
 	template<typename ... Args> std::string string_format(const std::string& format, Args ... args)
 	{
