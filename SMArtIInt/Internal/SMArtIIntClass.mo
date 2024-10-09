@@ -16,7 +16,7 @@ class SMArtIIntClass
     external "C" smartiint = NeuralNet_createObject(modelicaUtilityHelper, pathToTfLiteFile,
       n_inputDim, inputSizes, n_outputDim, outputSizes,
       stateful, fixEvalStep) annotation (
-      Library={"SMArtIInt","tensorflowlite_c"},
+      Library={"SMArtIInt","tensorflowlite_c", "onnxruntime_c"},
       LibraryDirectory="modelica://SMArtIInt/Resources/Library");
   end constructor;
 
