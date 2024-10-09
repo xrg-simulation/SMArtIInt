@@ -96,12 +96,21 @@ TfLiteNeuralNet::TfLiteNeuralNet(ModelicaUtilityHelper *p_modelicaUtilityHelper,
         stateful, fixInterval) {
 
 #ifdef _WIN32
-    std::string tensorflowDllPath = Utils::getTensorflowDllPathWin();
-    mp_tfdll = new TensorflowDllHandlerWin(tensorflowDllPath.c_str());
+    try {
+        std::string tensorflowDllPath = Utils::getTensorflowDllPathWin();
+        mp_tfdll = new TensorflowDllHandlerWin(tensorflowDllPath.c_str());
+    } catch (std::runtime_error& e) {
+        mp_modelicaUtilityHelper->ModelicaError("Unable to detect tensorflow path");
+    }
 #else
-    std::string tensorflowDllPath = Utils::getTensorflowDllPathLinux();
+    try {
+        std::string tensorflowDllPath = Utils::getTensorflowDllPathLinux();
         mp_tfdll = new TensorflowDllHandlerLinux(tensorflowDllPath.c_str());
+    } catch (std::runtime_error& e) {
+        mp_modelicaUtilityHelper->ModelicaError("Unable to detect tensorflow path");
+    }
 #endif
+
     mp_timeStepMngmt = new InputManagementTF(stateful, fixInterval, m_nInputEntries, mp_tfdll);
 
     // perform steps to create model

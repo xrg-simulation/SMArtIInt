@@ -9,7 +9,6 @@ void* NeuralNet_createObject(void* modelicaUtilityHelper, const char* ModelPath,
 	#ifndef NDEBUG
 	p_modelicaUtilityHelper->ModelicaMessage("!! SMArtIInt running in Debug Mode !!\n\n");
     #endif
-    //ToDo: check fixStep (must it always be >0???)
 
     // check for model format
     namespace fs = std::filesystem;

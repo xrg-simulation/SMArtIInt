@@ -7,6 +7,9 @@
 #include <dlfcn.h>
 #include <climits>
 #include <unistd.h>
+#include <cerrno>     // For errno
+#include <cstring>    // For strerror
+#include <sys/stat.h> // For lstat
 #endif
 
 int Utils::compareTensorSizes(const TfLiteTensor* A, const TfLiteTensor* B, unsigned int* unmatchedVals,
@@ -115,11 +118,36 @@ std::string Utils::getTensorflowDllPathLinux() {
         throw std::runtime_error(message);
     }
 
+    // Check if it's a symlink
+    struct stat sb;
+    if (lstat(dl_info.dli_fname, &sb) == -1) {
+        std::string error_message = "lstat failed for: ";
+        error_message += dl_info.dli_fname;
+        error_message += " - Error: ";
+        error_message += strerror(errno);
+        throw std::runtime_error(error_message);
+    }
+
     char path[PATH_MAX];
-    ssize_t count = readlink(dl_info.dli_fname, path, PATH_MAX);
-    if (count == -1) {
-        std::string message = "SMArtIInt: Unable to locate tensorflow shared library path";
-        throw std::runtime_error(message);
+    ssize_t count;
+    // If it's not a symbolic link, copy the path directly
+    if (!S_ISLNK(sb.st_mode)) {
+        std::cout << "Path is not a symbolic link, using the direct path: " << dl_info.dli_fname << std::endl;
+        strncpy(path, dl_info.dli_fname, PATH_MAX - 1);
+        path[PATH_MAX - 1] = '\0';  // Ensure null termination
+        count = strlen(path);
+    } else {
+        // If it is a symbolic link, resolve it
+        count = readlink(dl_info.dli_fname, path, PATH_MAX - 1);
+        if (count == -1) {
+            std::string error_message = "Failed to readlink for: ";
+            error_message += dl_info.dli_fname;
+            error_message += " - Error: ";
+            error_message += strerror(errno);
+            throw std::runtime_error(error_message); // Throw runtime_error with detailed error message
+        }
+        path[count] = '\0';  // Null-terminate the string
+        std::cout << "Resolved symbolic link path: " << path << std::endl;
     }
 
     std::string folderPath(path, count);
@@ -128,6 +156,47 @@ std::string Utils::getTensorflowDllPathLinux() {
         folderPath = folderPath.substr(0, lastSlash + 1);
     }
     // Build the new path for tensorflow_c.so
-    return folderPath + "tensorflowlite_c.so";
+    return folderPath + "libtensorflowlite_c.so";
 }
+
+#ifdef _WIN32
+#include <windows.h>
+#include <stdio.h>
+int Utils::is_debugger_present() {
+    return IsDebuggerPresent();
+}
+
+void Utils::wait_for_debugger() {
+    while (!is_debugger_present()) {
+        printf("Waiting for debugger...\n");
+        Sleep(1000); // Sleep for a second before checking again
+    }
+    printf("Debugger detected!\n");
+}
+#else
+#include <cstdio>
+#include <sys/ptrace.h>
+#include <unistd.h>
+
+int Utils::is_debugger_present() {
+
+    // Attempt to trace the current process
+    if (ptrace(PTRACE_TRACEME, 0, 1, 0) == -1) {
+        return 1; // Debugger is present
+    }
+    // Detach if no debugger is detected
+    ptrace(PTRACE_DETACH, 0, 1, 0);
+    return 0;
+}
+
+void Utils::wait_for_debugger() {
+    sleep(10);
+    while (!is_debugger_present()) {
+        printf("Waiting for debugger...\n");
+        sleep(1); // Sleep for a second before checking again
+    }
+    printf("Debugger detected!\n");
+}
+#endif
+
 #endif

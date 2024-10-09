@@ -73,4 +73,8 @@ namespace Utils {
 		std::vector<size_t> m_stateDataByteSizes;
 		std::vector<void*> m_stateStorage;
 	};
+
+    // methods to wait for debugger
+    int is_debugger_present();
+    void wait_for_debugger();
 }
