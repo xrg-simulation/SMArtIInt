@@ -23,7 +23,7 @@ class SMArtIIntClass
   function destructor
     input SMArtIIntClass smartiint;
   external"C" NeuralNet_destroyObject(smartiint) annotation (
-      Library={"SMArtIInt","tensorflowlite_c"},
+      Library={"SMArtIInt","tensorflowlite_c", "onnxruntime_c"},
       LibraryDirectory="modelica://SMArtIInt/Resources/Library");
   end destructor;
 end SMArtIIntClass;

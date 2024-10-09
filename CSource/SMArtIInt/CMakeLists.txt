@@ -12,6 +12,8 @@ set(Headerdateien
 		"InputManagementTF.h"
 		"InterfaceFunctions.h"
 		"NeuralNet.h"
+		"NeuralNetTF.h"
+		"NeuralNetONNX.h"
 		"Utils.h"
 		"NNBuffer.h"
 		"TensorflowDllHandler.h"
@@ -29,6 +31,8 @@ set(Quelldateien
 	"InputManagementTF.cpp"
     "InterfaceFunctions.cpp"
     "NeuralNet.cpp"
+	"NeuralNetTF.cpp"
+	"NeuralNetONNX.cpp"
     "Utils.cpp"
 )
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -58,7 +62,7 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../External/tensorflow/)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	target_link_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}//External")
-	target_link_libraries(${PROJECT_NAME} "libonnxruntime.so")
+	target_link_libraries(${PROJECT_NAME} "libonnxruntime_c.so")
 	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath=$ORIGIN")
 
 else ()

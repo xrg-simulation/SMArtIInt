@@ -1,5 +1,6 @@
 #include "InterfaceFunctions.h"
-#include "NeuralNet.h"
+#include "NeuralNetTF.h"
+#include "NeuralNetONNX.h"
 #include <filesystem>
 #include <variant>
 
@@ -54,38 +55,26 @@ void* NeuralNet_createObject(void* modelicaUtilityHelper, const char* ModelPath,
 void NeuralNet_destroyObject(void* externalObject)
 {
     auto* neuralNetPtr = static_cast<NeuralNet*>(externalObject);
-    auto p_neuralNet = dynamic_cast<TfLiteNeuralNet*>(neuralNetPtr);
-    if(p_neuralNet)
-    {
-        delete p_neuralNet;
-    }
-    else
-    {
-        auto p_neuralNet = dynamic_cast<OnnxNeuralNet*>(neuralNetPtr);
-        if(p_neuralNet)
-        {
-            //delete p_neuralNet;
-        }
-    }
+    delete neuralNetPtr;
 }
 
 void NeuralNet_runInferenceFlatTensor(void* externalObject, double time, double* input, unsigned int inputLength,
 	double* output, unsigned int outputLength)
 {
     auto* neuralNetPtr = static_cast<NeuralNet*>(externalObject);
-    auto p_neuralNet = dynamic_cast<TfLiteNeuralNet*>(neuralNetPtr);
-    if(p_neuralNet)
+    auto p_neuralNetTF = dynamic_cast<TfLiteNeuralNet*>(neuralNetPtr);
+    if(p_neuralNetTF)
     {
         // run inference
-        p_neuralNet->runInferenceFlatTensor(time, input, inputLength, output, outputLength);
+        p_neuralNetTF->runInferenceFlatTensor(time, input, inputLength, output, outputLength);
     }
     else
     {
-        auto p_neuralNet = dynamic_cast<OnnxNeuralNet*>(neuralNetPtr);
-        if(p_neuralNet)
+        auto p_neuralNetONNX = dynamic_cast<OnnxNeuralNet*>(neuralNetPtr);
+        if(p_neuralNetONNX)
         {
             // run inference
-            p_neuralNet->runInferenceFlatTensor(time, input, inputLength, output, outputLength);
+            p_neuralNetONNX->runInferenceFlatTensor(time, input, inputLength, output, outputLength);
         }
     }
 }
@@ -93,19 +82,19 @@ void NeuralNet_runInferenceFlatTensor(void* externalObject, double time, double*
 void NeuralNet_initializeStates(void* externalObject, double time,  double* states, unsigned int nStateValues)
 {
     auto* neuralNetPtr = static_cast<NeuralNet*>(externalObject);
-    auto p_neuralNet = dynamic_cast<TfLiteNeuralNet*>(neuralNetPtr);
-    if(p_neuralNet)
+    auto p_neuralNetTF = dynamic_cast<TfLiteNeuralNet*>(neuralNetPtr);
+    if(p_neuralNetTF)
     {
         // initialize states
-        p_neuralNet->initializeStates(time, states, nStateValues);
+        p_neuralNetTF->initializeStates(time, states, nStateValues);
     }
     else
     {
-        auto p_neuralNet = dynamic_cast<OnnxNeuralNet*>(neuralNetPtr);
-        if(p_neuralNet)
+        auto p_neuralNetONNX = dynamic_cast<OnnxNeuralNet*>(neuralNetPtr);
+        if(p_neuralNetONNX)
         {
             // initialize states
-            p_neuralNet->initializeStates(time, states, nStateValues);
+            p_neuralNetONNX->initializeStates(time, states, nStateValues);
         }
     }
 }

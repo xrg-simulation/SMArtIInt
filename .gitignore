@@ -22,3 +22,4 @@ SMArtIInt/Resources/ExampleNeuralNets/PIController/savedmodel*
 _dymWork/*
 _deploy/*
 _cmake*
+cmake_*
