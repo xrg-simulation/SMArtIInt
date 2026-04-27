@@ -11,7 +11,7 @@ model RunInferenceFlatInput
     annotation (Placement(transformation(extent={{80,-20},{120,20}})));
 
 equation
-  y[:] = InterfaceFunctions.runInferenceFlatTensor(
+  y = InterfaceFunctions.runInferenceFlatTensor(
     smartint,
     time,
     u,
