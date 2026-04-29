@@ -12,5 +12,5 @@ The latest and actively maintained version of the SMArtInt library has been move
 
 Please use the new repository for all future development, updates, and support.
 
-![Image](SMArtIInt_Icon.svg)
+![Image](SMArtInt-library.jpg)
 
