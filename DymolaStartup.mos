@@ -1,6 +1,0 @@
-clear();
-DefaultModelicaVersion("4.0.0", true);
-
-openModel("SMArtInt\\package.mo", true, false);
-Modelica.Utilities.Files.createDirectory(".\_dymWork")
-cd(".\_dymWork")

@@ -1,5 +1,0 @@
-BaseNeuralNet
-BaseGenericNeuralNet
-BaseFeedForwardNeuralNet
-BaseRecurrentNeuralNet
-BaseStatefulRecurrentNeuralNet
